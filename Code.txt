@@ -1,0 +1,107 @@
+let
+    Origen = VentasCerdo,
+    #"Personalizada agregada" = Table.AddColumn(Origen, "CostoKilo", each [Costo]/[Kilo]),
+    #"Personalizada agregada1" = Table.AddColumn(#"Personalizada agregada", "TEngorda", each [TiempoEngorda]),
+    #"Filas agrupadas" = Table.Group(#"Personalizada agregada1", {"Fecha"}, {{"Peso", each List.Average([Peso]), type number}, {"TEngorda", each List.Average([TEngorda]), type number}, {"Costo", each List.Average([CostoKilo]), type number}, {"Precio", each List.Average([Precio]), type number}}),
+    #"Personalizada agregada2" = Table.AddColumn(#"Filas agrupadas", "Utilidad", each [Precio]-[Costo]),
+    DesvEstPe  = List.StandardDeviation(#"Personalizada agregada2"[Peso]),
+    MediaPe = List.Average(#"Personalizada agregada2"[Peso]),
+    #"Filas filtradas" = Table.SelectRows(#"Personalizada agregada2", each [Peso] >= MediaPe-DesvEstPe and [Peso] <= MediaPe+DesvEstPe),
+    MediaTE = List.Average(#"Personalizada agregada2"[TEngorda]),
+    DesvEstTE  = List.StandardDeviation(#"Personalizada agregada2"[TEngorda]),
+    #"Filas filtradas1" = Table.SelectRows(#"Filas filtradas", each [TEngorda] >= MediaTE-DesvEstTE and [TEngorda] <= MediaTE+DesvEstTE),
+    MediaU = List.Average(#"Filas filtradas1"[Utilidad]),
+    DesvEstU  = List.StandardDeviation(#"Filas filtradas1"[Utilidad]),
+    #"Filas filtradas2" = Table.SelectRows(#"Filas filtradas1", each [Utilidad] >= MediaU),
+    MediaC = List.Average(#"Filas filtradas2"[Costo]),
+    DesvEstC  = List.StandardDeviation(#"Filas filtradas2"[Costo]),
+    #"Filas filtradas3" = Table.SelectRows(#"Filas filtradas2", each [Costo] <= MediaC),
+    MPe = List.Average(#"Filas filtradas3"[Peso]),
+    DvPe = List.StandardDeviation(#"Filas filtradas3"[Peso]),
+    MTE = List.Average(#"Filas filtradas3"[TEngorda]),
+    DvTE = List.StandardDeviation(#"Filas filtradas3"[TEngorda]),
+    PeInf = MPe-DvPe,
+    PeSup = MPe + DvPe,
+    TEInf = MTE-DvTE,
+    TESup = MTE + DvTE,
+    Metricas = #table({"Cerdo","Peso", "Tiempo Engorda"}, {{"Valor Inf",PeInf,TEInf},{"Media",MPe,MTE},{"Valor Sup",PeSup,TESup}})
+in
+   Metricas
+
+
+
+    MediaQ = List.Average(#"Filas agrupadas"[Cantidad]),
+    DesvesQ = List.StandardDeviation(#"Filas agrupadas"[Cantidad]),
+    MediaK = List.Average(#"Filas agrupadas"[Kilos]),
+    DesvesK = List.StandardDeviation(#"Filas agrupadas"[Kilos]),
+    #"Filas filtradas" = Table.SelectRows(#"Filas agrupadas", each [Cantidad] >= MediaQ-DesvesQ and [Cantidad] <= MediaQ+DesvesQ),
+    #"Filas filtradas1" = Table.SelectRows(#"Filas filtradas", each [Kilos] >= MediaK-DesvesK and [Kilos] <= MediaK+DesvesK)
+
+let
+    Origen = AlimentoCerdo,
+    #"Filas filtradas" = Table.SelectRows(Origen, each ([Descripción] = "Formulacion Crecimiento 1 Provimi 25-40 Amarillo ")),
+    #"Filas ordenadas" = Table.Sort(#"Filas filtradas",{{"Fecha", Order.Ascending}}),
+    FilaAnterior = Table.AddIndexColumn(#"Filas ordenadas", "Índice", 0, 1),
+    #"Personalizada agregada" = Table.AddColumn(FilaAnterior, "Fecha-1", each FilaAnterior[Fecha]{[Índice]-1}),
+    #"Resta de fecha insertada" = Table.AddColumn(#"Personalizada agregada", "DateDifference", each Duration.Days([Fecha] - [#"Fecha-1"]), Int64.Type),
+    #"Errores reemplazados" = Table.ReplaceErrorValues(#"Resta de fecha insertada", {{"DateDifference", 0}}),
+    #"Filas agrupadas" = Table.Group(#"Errores reemplazados", {"Descripción"}, {{"No.Días Prom", each List.Average([DateDifference]), type number},{"DesvEst", each List.StandardDeviation([DateDifference]), type number}}),
+    M = List.Average(#"Filas agrupadas"[DateDifference]),
+    DesvesQ = List.StandardDeviation(#"Filas agrupadas"[DateDifference])
+in
+    #"Filas agrupadas"
+---------------------------------------------------------------------------------------------------------------------------------------------------------------
+let
+    Origen = Excel.Workbook(File.Contents("C:\Users\PERSONAL\Desktop\GranjaVolantin\Granja\CERDO.xlsx"), null, true),
+    Alimento_Table = Origen{[Item="Alimento",Kind="Table"]}[Data],
+    #"Tipo cambiado" = Table.TransformColumnTypes(Alimento_Table,{{"Código", Int64.Type}, {"Descripción", type text}, {"Tipo de movimiento", type text}, {"Almacén", type text}, {"Capa", type any}, {"E/S", type text}, {"Folio", type text}, {"Fecha", type date}, {"Referencia", type any}, {"Unidad", type text}, {"Entrada", type number}, {"Kilos", type any}, {"Salida", type any}, {"Importe Venta", Int64.Type}, {"Importe Costo", type number}, {"Cliente / Proveedor", type any}, {"Categoría", type text}, {"Línea", type text}}),
+    #"Columnas quitadas" = Table.RemoveColumns(#"Tipo cambiado",{"Tipo de movimiento", "Capa", "E/S", "Folio", "Referencia", "Kilos", "Salida", "Importe Venta", "Cliente / Proveedor", "Línea"}),
+    #"Filas agrupadas" = Table.Group(#"Columnas quitadas", {"Fecha", "Descripción", "Unidad"}, {{"Cantidad", each List.Sum([Entrada]), type number}, {"Costo", each List.Sum([Importe Costo]), type number}}),
+    #"Filas ordenadas" = Table.Sort(#"Filas agrupadas",{{"Fecha", Order.Ascending}})
+in
+    #"Filas ordenadas"
+
+
+
+let
+    Origen = AlimentoCerdo,
+    #"Filas agrupadas" = Table.Group(Origen, {"Descripción","Unidad"}, {{"Media: Cantidad", each List.Average([Cantidad]), type number}, 
+    {"DesvEst: Cantidad", each List.StandardDeviation([Cantidad]), type number},{"Media: Costo", each List.Average([Costo]), type number},
+    {"DesvEst: Costo", each List.StandardDeviation([Costo]), type number}}),
+    #"Suma insertada" = Table.AddColumn(#"Filas agrupadas", "Sum", each List.Sum({[#"Media: Cantidad"], [#"DesvEst: Cantidad"]}), type number),
+    #"Columnas con nombre cambiado" = Table.RenameColumns(#"Suma insertada",{{"Sum", "Frontera Sup: Cantidad"}}),
+    #"Resta insertada" = Table.AddColumn(#"Columnas con nombre cambiado", "Subtract", each [#"Media: Cantidad"] - [#"DesvEst: Cantidad"], type number),
+    #"Columnas con nombre cambiado1" = Table.RenameColumns(#"Resta insertada",{{"Subtract", "Frontera Inf: Cantidad"}}),
+    #"Suma insertada1" = Table.AddColumn(#"Columnas con nombre cambiado1", "Sum", each List.Sum({[#"Media: Costo"], [#"DesvEst: Costo"]}), type number),
+    #"Columnas con nombre cambiado2" = Table.RenameColumns(#"Suma insertada1",{{"Sum", "Frontera Sup: Costo"}}),
+    #"Resta insertada1" = Table.AddColumn(#"Columnas con nombre cambiado2", "Subtract", each [#"Media: Costo"] - [#"DesvEst: Costo"], type number),
+    #"Columnas con nombre cambiado3" = Table.RenameColumns(#"Resta insertada1",{{"Subtract", "Frontera Inf: Costo"}}),
+    #"Columnas reordenadas" = Table.ReorderColumns(#"Columnas con nombre cambiado3",{"Descripción", "Frontera Inf: Cantidad", "Media: Cantidad", "Frontera Sup: Cantidad", "DesvEst: Cantidad", "Frontera Inf: Costo", "Media: Costo", "Frontera Sup: Costo", "DesvEst: Costo"}),
+    #"Columnas quitadas" = Table.RemoveColumns(#"Columnas reordenadas",{"DesvEst: Cantidad", "DesvEst: Costo"})
+in
+    #"Columnas quitadas"
+
+List.StandardDeviation
+
+
+let
+    Origen = AlimentoCerdo,
+    #"Columnas quitadas" = Table.RemoveColumns(Origen,{"Unidad", "Cantidad", "Costo"}),
+    #"Filas ordenadas" = Table.Sort(#"Columnas quitadas",{{"Descripción", Order.Ascending}, {"Fecha", Order.Ascending}}),
+    Fec = Table.AddIndexColumn(#"Filas ordenadas", "Índice", 0, 1),
+    #"Personalizada agregada" = Table.AddColumn(Fec, "Custom", each Fec[Fecha]{[Índice]-1}),
+    #"Resta de fecha insertada" = Table.AddColumn(#"Personalizada agregada", "DateDifference", each Duration.Days([Fecha] - [Custom]), Int64.Type),
+    #"Errores reemplazados" = Table.ReplaceErrorValues(#"Resta de fecha insertada", {{"DateDifference", 0}, {"Custom", 0}}),
+    #"Filas filtradas" = Table.SelectRows(#"Errores reemplazados", each [DateDifference] > 0),
+    #"Filas agrupadas" = Table.Group(#"Filas filtradas", {"Descripción"}, {{"Media: No. Dias", each List.Average([DateDifference]), type number},
+    {"DesvEst: No. Dias", each List.StandardDeviation([DateDifference]), type number}}),
+    #"Suma insertada1" = Table.AddColumn(#"Filas agrupadas","Sum", each List.Sum({[#"Media: No. Dias"], [#"DesvEst: No. Dias"]}), type number),
+    #"Columnas con nombre cambiado2" = Table.RenameColumns(#"Suma insertada1",{{"Sum", "Frontera Sup: No. Dias"}}),
+    #"Resta insertada1" = Table.AddColumn(#"Columnas con nombre cambiado2", "Subtract", each [#"Media: No. Dias"] - [#"DesvEst: No. Dias"], type number),
+    #"Columnas con nombre cambiado3" = Table.RenameColumns(#"Resta insertada1",{{"Subtract", "Frontera Inf: No. Dias"}}),
+    #"Columnas reordenadas" = Table.ReorderColumns(#"Columnas con nombre cambiado3",{"Descripción", "Frontera Inf: No. Dias", "Media: No. Dias", "DesvEst: No. Dias", "Frontera Sup: No. Dias"}),
+    #"Columnas quitadas1" = Table.RemoveColumns(#"Columnas reordenadas",{"DesvEst: No. Dias"})
+in
+    #"Columnas quitadas1"
+
+

@@ -33,8 +33,7 @@ def Alimento_Stats_Gral(Table):
     return AlimentoStats
 
 def Alimento_Stats_Granja(Table):
-    Table = AlimentoC
-    Table['Almacén'] = [ AlimentoC['Almacén'][i][0:3] if Table['Almacén'][i][0:2] == 'GV' else AlimentoC['Almacén'][i] for i in range(len(Table))]
+    Table['Almacén'] = [ Table['Almacén'][i][0:3] if Table['Almacén'][i][0:2] == 'GV' else Table['Almacén'][i] for i in range(len(Table))]
     Table =  Table.groupby(['Almacén','Descripción','Unidad','Fecha']).sum().reset_index()
     Table['Fecha2'] = [Table.Fecha[i-1] if i>0 else Table.Fecha[i] for i in range(len(Table))]
     Table['Periodo'] = [Table.Fecha[i]-Table.Fecha2[i] for i in range(len(Table))]

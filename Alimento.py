@@ -14,19 +14,23 @@ import matplotlib.pyplot as plt
 
 #%%
 def Alimento_Stats_Gral(Table):
+<<<<<<< Updated upstream
     AlimentoGral = Table.groupby(['Descripción','Fecha']).sum().reset_index()
+=======
+    AlimentoGral = Table.groupby(['Descripción','Unidad','Fecha']).sum().reset_index()
+>>>>>>> Stashed changes
     AlimentoGral['Fecha2'] = [AlimentoGral.Fecha[i-1] if i>0 else AlimentoGral.Fecha[i] for i in range(len(AlimentoGral))]
     AlimentoGral['Periodo'] = [AlimentoGral.Fecha[i]-AlimentoGral.Fecha2[i] for i in range(len(AlimentoGral))]
     AlimentoGral['Periodo'] = pd.to_numeric(AlimentoGral['Periodo'].dt.days, downcast='integer')
     AlimentoGral['Periodo'] = [0 if AlimentoGral['Periodo'][i] < 0 else AlimentoGral['Periodo'][i] for i in range(len(AlimentoGral))]
     AlimentoGral = AlimentoGral.drop(columns=['Fecha', 'Fecha2'])
-    AlimentoMu = AlimentoGral.groupby('Descripción').mean()
+    AlimentoMu = AlimentoGral.groupby(['Descripción','Unidad']).mean()
     AlimentoMu = AlimentoMu.rename(columns = {'Entrada':'MuCantidad','Importe Costo':'MuCost','Periodo':'MuPeriodo'})
-    AlimentoMax = AlimentoGral.groupby('Descripción').max()
+    AlimentoMax = AlimentoGral.groupby(['Descripción','Unidad']).max()
     AlimentoMax = AlimentoMax.rename(columns = {'Entrada':'MaxCantidad','Importe Costo':'MaxCost','Periodo':'MaxPeriodo'})
-    AlimentoMin = AlimentoGral.groupby('Descripción').min()
+    AlimentoMin = AlimentoGral.groupby(['Descripción','Unidad']).min()
     AlimentoMin = AlimentoMin.rename(columns = {'Entrada':'MinCantidad','Importe Costo':'MinCost','Periodo':'MinPeriodo'})
-    AlimentoStd = AlimentoGral.groupby('Descripción').std()
+    AlimentoStd = AlimentoGral.groupby(['Descripción','Unidad']).std()
     AlimentoStd = AlimentoStd.rename(columns = {'Entrada':'StdCantidad','Importe Costo':'StdCost','Periodo':'StdPeriodo'})
     AlimentoStats = pd.concat([AlimentoMin,AlimentoMu,AlimentoStd,AlimentoMax],axis=1)
     return AlimentoStats

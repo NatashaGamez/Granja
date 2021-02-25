@@ -14,11 +14,8 @@ import matplotlib.pyplot as plt
 
 #%%
 def Alimento_Stats_Gral(Table):
-<<<<<<< Updated upstream
     AlimentoGral = Table.groupby(['Descripción','Fecha']).sum().reset_index()
-=======
     AlimentoGral = Table.groupby(['Descripción','Unidad','Fecha']).sum().reset_index()
->>>>>>> Stashed changes
     AlimentoGral['Fecha2'] = [AlimentoGral.Fecha[i-1] if i>0 else AlimentoGral.Fecha[i] for i in range(len(AlimentoGral))]
     AlimentoGral['Periodo'] = [AlimentoGral.Fecha[i]-AlimentoGral.Fecha2[i] for i in range(len(AlimentoGral))]
     AlimentoGral['Periodo'] = pd.to_numeric(AlimentoGral['Periodo'].dt.days, downcast='integer')

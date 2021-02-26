@@ -29,7 +29,7 @@ def Alimento_Stats_Gral(Table):
     AlimentoMin = AlimentoMin.rename(columns = {'Entrada':'MinCantidad','Importe Costo':'MinCost','Periodo':'MinPeriodo'})
     AlimentoStd = AlimentoGral.groupby(['Descripción','Unidad']).std()
     AlimentoStd = AlimentoStd.rename(columns = {'Entrada':'StdCantidad','Importe Costo':'StdCost','Periodo':'StdPeriodo'})
-    AlimentoStats = pd.concat([AlimentoMin,AlimentoMu,AlimentoStd,AlimentoMax],axis=1)
+    AlimentoStats = pd.concat([AlimentoMin,AlimentoMu,AlimentoStd,AlimentoMax],axis=1).reset_index()
     return AlimentoStats
 
 def Alimento_Stats_Granja(Table):
@@ -44,24 +44,41 @@ def Alimento_Stats_Granja(Table):
     AlimentoMu = AlimentoMu.rename(columns = {'Entrada':'MuCantidad','Importe Costo':'MuCost','Periodo':'MuPeriodo'})
     AlimentoStd = Table.groupby(['Almacén','Descripción','Unidad']).std()
     AlimentoStd = AlimentoStd.rename(columns = {'Entrada':'StdCantidad','Importe Costo':'StdCost','Periodo':'StdPeriodo'})
-    AlimentoStats = pd.concat([AlimentoMu,AlimentoStd],axis=1)
+    AlimentoStats = pd.concat([AlimentoMu,AlimentoStd],axis=1).reset_index()
     return AlimentoStats
 
-#%%
-AlimentoC = pd.read_excel('CERDO.xlsx', sheet_name='ALIMENTOS FORMULAS CERDOS').drop(columns=['Código','Tipo de movimiento','Capa','E/S',
-                                                                                              'Folio','Referencia','Kilos','Salida','Importe Venta',
-                                                                                              'Cliente / Proveedor','Categoría','Línea'])
-AlimentoH = pd.read_excel('HUEVO.xlsx', sheet_name='FORMULAS').drop(columns=['Código','Tipo de movimiento','Capa','E/S',
-                                                                             'Folio','Referencia','Kilos','Salida','Importe Venta',
-                                                                             'Cliente / Proveedor','Categoría','Línea'])
-AlimentoGralC = Alimento_Stats_Gral(AlimentoC)
-AlimentoGralH = Alimento_Stats_Gral(AlimentoH)
-AlimentoGranjaC = Alimento_Stats_Granja(AlimentoC)
-AlimentoGranjaH = Alimento_Stats_Granja(AlimentoH)
+def Acotar(StatsO,RH1):
+    infC = StatsO['MuCantidad'] - StatsO['StdCantidad']
+    supC = StatsO['MuCantidad'] + StatsO['StdCantidad']
+    index_to_drop = []
+    for i in range(len(StatsO)):
+        for j in range(len(RH1)):
+            if StatsO['Almacén'][i] == RH1['Almacén'][j] and \
+                StatsO['Descripción'][i] == RH1['Descripción'][j] and\
+                (RH1['Entrada'][j] <= infC[i] or RH1['Entrada'][j] >= supC[i]):
+                    index_to_drop.append(j)  
+    RH1 = RH1.drop(index_to_drop, axis = 0).reset_index(drop=True)
+    return RH1    
+
 
 #%%
+AC = pd.read_excel('CERDO.xlsx', sheet_name='ALIMENTOS FORMULAS CERDOS').drop(columns=['Código','Tipo de movimiento','Capa','E/S',
+                                                                                              'Folio','Referencia','Kilos','Salida','Importe Venta',
+                                                                                              'Cliente / Proveedor','Categoría','Línea'])
+AH = pd.read_excel('HUEVO.xlsx', sheet_name='FORMULAS').drop(columns=['Código','Tipo de movimiento','Capa','E/S',
+                                                                             'Folio','Referencia','Kilos','Salida','Importe Venta',
+                                                                             'Cliente / Proveedor','Categoría','Línea'])
+
+SC = Alimento_Stats_Granja(AC)
+SH = Alimento_Stats_Granja(AH)
+#%%
+AC1 = Acotar(SC,AC)
+SC1 =Alimento_Stats_Granja(AC1)
+AH1 = Acotar(SH,AH)
+SH1 = Alimento_Stats_Granja(AH1)
+#%%
 with pd.ExcelWriter('Alimentos.xlsx') as writer:  
-    AlimentoGralC.to_excel(writer, sheet_name='Alimento Gral Cerdo', index = True)
-    AlimentoGralH.to_excel(writer, sheet_name='Alimento Gral Huevo', index = True)
-    AlimentoGranjaC.to_excel(writer, sheet_name='Alimento Granja Cerdo', index = True)
-    AlimentoGranjaH.to_excel(writer, sheet_name='Alimento Granja Huevo', index = True)
+ #   AlimentoGralC.to_excel(writer, sheet_name='Alimento Gral Cerdo', index = True)
+ #   AlimentoGralH.to_excel(writer, sheet_name='Alimento Gral Huevo', index = True)
+    SC1.to_excel(writer, sheet_name='Alimento Granja Cerdo', index = True)
+    SH1.to_excel(writer, sheet_name='Alimento Granja Huevo', index = True)

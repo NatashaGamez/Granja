@@ -104,4 +104,10 @@ let
 in
     #"Columnas quitadas1"
 
+--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+    qventas = List.Sum(#"Columna condicional agregada"[No. Ventas]),
+    Kilos = List.Sum(#"Columna condicional agregada"[Kilo]),
+    Cabeza = List.Sum(#"Columna condicional agregada"[Cabezas]),
+    Venta = List.Sum(#"Columna condicional agregada"[Venta]),
+
 

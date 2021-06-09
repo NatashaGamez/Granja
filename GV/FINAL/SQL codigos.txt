@@ -1,0 +1,85 @@
+-- Costo cantidad consumo de alimentos
+SELECT M.idBodega AS Almacen, M.Referencia,
+	CASE m.Unidad WHEN 'TON' THEN SUM(M.Cantidad)*-1*907.185 ELSE SUM(M.Cantidad)*-1 END AS KilosConsumidos,
+	SUM(M.Costo)*-1 AS Costo, 
+	SUM(M2.Cantidad)*-1 AS Cabezas, (SUM(M.Costo)*-1)/NULLIF(SUM(M2.Cantidad)*-1,0) AS CostoAlimentoxCabeza,
+	(SUM(M.Costo)*-1)/NULLIF(DATEDIFF(day, TRY_CAST(SUBSTRING(m2.idCapa,8,2)+'/'+SUBSTRING(m2.idCapa,10,2)+'/20'+SUBSTRING(m2.idCapa,12,2)AS DATE),MAX(M2.Fecha)),0) AS CostoDiario,
+	(SUM(M.Costo)*-1)/NULLIF(DATEDIFF(day, TRY_CAST(SUBSTRING(m2.idCapa,8,2)+'/'+SUBSTRING(m2.idCapa,10,2)+'/20'+SUBSTRING(m2.idCapa,12,2)AS DATE),MAX(M2.Fecha))*SUM(M2.Cantidad)*-1,0) AS CostoDiarioxCabeza
+FROM dbo.gridMovimientosInventario AS M INNER JOIN dbo.gridMovimientosInventario M2 ON M.Referencia = M2.idCapa
+WHERE M.TipoMovimiento = 'Salida por traspaso de corral' AND M.NombreLinea = 'Formulaciones' 
+AND M.Referencia LIKE 'GV%' AND (M2.NombreLinea = 'Cerdos para venta' OR M2.NombreLinea = 'Cerdos Cerdos Pie de Cría') 
+AND (M2.TipoMovimiento = 'Salida por facturación' OR M2.TipoMovimiento = 'Cancelación')
+GROUP BY M.idBodega,M.Referencia, M.Unidad,m2.idcapa
+
+------------------------------------------------------------------------------------------------------------------
+SELECT F.idBodega AS Almacen, F.idCapa AS Capa,
+CASE A.Unidad WHEN 'TON' THEN SUM(A.Cantidad)*-1*907.185 ELSE SUM(A.Cantidad)*-1 END AS KilosConsumidos,
+SUM(A.Costo)*-1 AS Costo, (SUM(A.Costo)*-1)/NULLIF(SUM(F.Cantidad)*-1,0) AS CostoAlimentoxCabeza,
+(SUM(A.Costo)*-1)/NULLIF(DATEDIFF(day, TRY_CAST(SUBSTRING(F.idCapa,8,2)+'/'+SUBSTRING(F.idCapa,10,2)+'/20'+ SUBSTRING(F.idCapa,12,2)AS DATE),MAX(M2.Fecha)),0) AS CostoDiario,
+(SUM(A.Costo)*-1)/NULLIF(DATEDIFF(day, TRY_CAST(SUBSTRING(F.idCapa,8,2)+'/'+SUBSTRING(F.idCapa,10,2)+'/20 + SUBSTRING(F.idCapa,12,2)AS DATE),MAX(F.Fecha))*SUM(F.Cantidad)*-1,0) AS CostoDiarioxCabeza 
+FROM dbo.gridMovimientosInventario F INNER JOIN dbo.gridMovimientosInventario A ON F.idCapa=A.Referencia
+WHERE A.TipoMovimiento = 'Salida por traspaso de corral' AND A.NombreLinea = 'Formulaciones' 
+AND (F.NombreLinea = 'Cerdos para venta' OR F.NombreLinea = 'Cerdos Cerdos Pie de Cría') 
+AND (F.TipoMovimiento = 'Salida por facturación' OR F.TipoMovimiento = 'Cancelación')
+GROUP BY F.idBodega, F.idcapa, A.Unidad,
+
+
+------ Cambio unidades
+SELECT M.idBodega AS Almacen, M.Referencia,
+	CASE m.Unidad WHEN 'TON' THEN SUM(M.Cantidad)*-1*907.185 ELSE SUM(M.Cantidad)*-1 END AS Consumo,
+	 SUM(M.Costo)*-1 AS Costo
+		FROM dbo.gridMovimientosInventario AS M
+WHERE M.TipoMovimiento = 'Salida por traspaso de corral' AND M.NombreLinea = 'Formulaciones' AND M.Referencia LIKE 'GV%'
+GROUP BY M.idBodega,M.Referencia, M.Unidad
+
+
+
+
+-- Cabezas, Kilo, Precio, Costo
+SELECT m.Codigo, m.Descripcion, m.idBodega, M.idCapa, 
+	TRY_CAST(SUBSTRING(m.idCapa,8,2)+'/'+SUBSTRING(m.idCapa,10,2)+'/20'+SUBSTRING(m.idCapa,12,2)AS DATE) AS FechaDestete,
+	MAX(M.Fecha) AS FechaSalida,
+	DATEDIFF(day, TRY_CAST(SUBSTRING(m.idCapa,8,2)+'/'+SUBSTRING(m.idCapa,10,2)+'/20'+SUBSTRING(m.idCapa,12,2)AS DATE),MAX(M.Fecha)) AS Duracion,
+	SUM(M.Cantidad)*-1 AS Cabezas,
+	sum(CONVERT(FLOAT,m.Kilos)) AS Kilos,
+	 sum(CONVERT(FLOAT,m.Kilos))/NULLIF(SUM(M.Cantidad)*-1,0) AS PesoPromedio,
+	(Sum(M.Venta)*-1)/NULLIF(sum(CONVERT(FLOAT,m.Kilos)),0) AS PrecioxKilo, 
+	(Sum(m.Costo)*-1)/NULLIF(sum(CONVERT(FLOAT,m.Kilos)),0) AS CostoxKilo
+FROM dbo.gridMovimientosInventario AS M 
+		WHERE (M.NombreLinea = 'Cerdos para venta' OR M.NombreLinea = 'Cerdos Cerdos Pie de Cría') 
+		AND (M.TipoMovimiento = 'Salida por facturación' OR M.TipoMovimiento = 'Cancelación')
+		AND LEN(M.idCapa)=13
+GROUP BY M.idBodega, M.idCapa, m.Codigo, m.Descripcion
+
+
+
+
+----------------------------------------- COSTO MED PREV VETERINARIO
+SELECT M.idBodega, M.Referencia, SUM(M.Costo)*-1 AS Costo FROM dbo.gridMovimientosInventario AS M
+WHERE M.TipoMovimiento = 'Salida por traspaso de corral' AND M.NombreLinea = 'Medicamento Preventivo Veterinario' AND M.idBodega LIKE 'GV%'
+GROUP BY M.idBodega, M.Referencia
+
+
+
+SELECT F.idBodega AS Almacen, F.idCapa AS Capa, SUM(MVP.Costo)*-1 AS Costo
+FROM dbo.gridMovimientosInventario AS F INNER JOIN dbo.gridMovimientosInventario MVP ON F.idCapa= MPV.Referencia
+WHERE MVP.TipoMovimiento = 'Salida por traspaso de corral' AND MVP.NombreLinea = 'Medicamento Preventivo Veterinario' 
+AND (F.NombreLinea = 'Cerdos para venta' OR F.NombreLinea = 'Cerdos Cerdos Pie de Cría') 
+AND (F.TipoMovimiento = 'Salida por facturación' OR F.TipoMovimiento = 'Cancelación')
+GROUP BY F.idBodega, F.idCapa
+
+
+---------------------------------------------------------------- GASTO
+SELECT F.idBodega AS Almacen, F.idCapa AS Capa, SUM(G.Costo)*-1 AS Gasto, 
+(SUM(G.Costo)*-1)/NULLIF(SUM(F.Cantidad)*-1,0) AS GastoxCabezas
+		FROM dbo.gridMovimientosInventario AS F INNER JOIN dbo.gridMovimientosInventario G ON F.idCapa= G.Referencia
+	WHERE G.TipoMovimiento = 'Gasto en corral' AND F.idBodega LIKE 'GV%'  AND (F.NombreLinea = 'Cerdos para venta' OR F.NombreLinea = 'Cerdos Cerdos Pie de Cría') 
+		AND (F.TipoMovimiento = 'Salida por facturación' OR F.TipoMovimiento = 'Cancelación')
+GROUP BY F.idBodega, F.idCapa
+
+
+SELECT M.idBodega, M.Referencia,SUM(M.Costo)*-1 AS Gasto, (SUM(M.Costo)*-1)/NULLIF(SUM(M2.Cantidad)*-1,0) AS GastoxCabezas
+		FROM dbo.gridMovimientosInventario AS M INNER JOIN dbo.gridMovimientosInventario m2 ON M.Referencia = M2.idCapa
+	WHERE M.TipoMovimiento = 'Gasto en corral' AND M.idBodega LIKE 'GV%'  AND (M2.NombreLinea = 'Cerdos para venta' OR M2.NombreLinea = 'Cerdos Cerdos Pie de Cría') 
+		AND (M2.TipoMovimiento = 'Salida por facturación' OR M2.TipoMovimiento = 'Cancelación')
+GROUP BY M.idBodega, M.Referencia

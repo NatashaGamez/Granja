@@ -1,6 +1,7 @@
 -- Costo cantidad consumo de alimentos
 SELECT M.idBodega AS Almacen, M.Referencia,
 	CASE m.Unidad WHEN 'TON' THEN SUM(M.Cantidad)*-1*907.185 ELSE SUM(M.Cantidad)*-1 END AS KilosConsumidos,
+	CASE m.Unidad WHEN 'TON' THEN SUM(M.Cantidad)*-1*907.185,NULLIF(SUM(M2.Cantidad)*-1,0) ELSE (SUM(M.Cantidad)*-1)/NULLIF(SUM(M2.Cantidad)*-1,0) END AS KilosConsumidosxCabeza,
 	SUM(M.Costo)*-1 AS Costo, 
 	SUM(M2.Cantidad)*-1 AS Cabezas, (SUM(M.Costo)*-1)/NULLIF(SUM(M2.Cantidad)*-1,0) AS CostoAlimentoxCabeza,
 	(SUM(M.Costo)*-1)/NULLIF(DATEDIFF(day, TRY_CAST(SUBSTRING(m2.idCapa,8,2)+'/'+SUBSTRING(m2.idCapa,10,2)+'/20'+SUBSTRING(m2.idCapa,12,2)AS DATE),MAX(M2.Fecha)),0) AS CostoDiario,
@@ -12,16 +13,17 @@ AND (M2.TipoMovimiento = 'Salida por facturación' OR M2.TipoMovimiento = 'Cance
 GROUP BY M.idBodega,M.Referencia, M.Unidad,m2.idcapa
 
 ------------------------------------------------------------------------------------------------------------------
-SELECT F.idBodega AS Almacen, F.idCapa AS Capa,
+SELECT F.idBodega AS Granja, F.idCapa AS Capa,
 CASE A.Unidad WHEN 'TON' THEN SUM(A.Cantidad)*-1*907.185 ELSE SUM(A.Cantidad)*-1 END AS KilosConsumidos,
+CASE A.Unidad WHEN 'TON' THEN (SUM(A.Cantidad)*-1*907.185)/NULLIF(SUM(F.Cantidad)*-1,0) ELSE (SUM(A.Cantidad)*-1)/NULLIF(SUM(F.Cantidad)*-1,0) END AS KilosConsumidosxCabeza
 SUM(A.Costo)*-1 AS Costo, (SUM(A.Costo)*-1)/NULLIF(SUM(F.Cantidad)*-1,0) AS CostoAlimentoxCabeza,
-(SUM(A.Costo)*-1)/NULLIF(DATEDIFF(day, TRY_CAST(SUBSTRING(F.idCapa,8,2)+'/'+SUBSTRING(F.idCapa,10,2)+'/20'+ SUBSTRING(F.idCapa,12,2)AS DATE),MAX(M2.Fecha)),0) AS CostoDiario,
+(SUM(A.Costo)*-1)/NULLIF(DATEDIFF(day, TRY_CAST(SUBSTRING(F.idCapa,8,2)+'/'+SUBSTRING(F.idCapa,10,2)+'/20'+ SUBSTRING(F.idCapa,12,2)AS DATE),MAX(F.Fecha)),0) AS CostoDiario,
 (SUM(A.Costo)*-1)/NULLIF(DATEDIFF(day, TRY_CAST(SUBSTRING(F.idCapa,8,2)+'/'+SUBSTRING(F.idCapa,10,2)+'/20 + SUBSTRING(F.idCapa,12,2)AS DATE),MAX(F.Fecha))*SUM(F.Cantidad)*-1,0) AS CostoDiarioxCabeza 
 FROM dbo.gridMovimientosInventario F INNER JOIN dbo.gridMovimientosInventario A ON F.idCapa=A.Referencia
 WHERE A.TipoMovimiento = 'Salida por traspaso de corral' AND A.NombreLinea = 'Formulaciones' 
 AND (F.NombreLinea = 'Cerdos para venta' OR F.NombreLinea = 'Cerdos Cerdos Pie de Cría') 
 AND (F.TipoMovimiento = 'Salida por facturación' OR F.TipoMovimiento = 'Cancelación')
-GROUP BY F.idBodega, F.idcapa, A.Unidad,
+GROUP BY F.idBodega, F.idcapa, A.Unidad
 
 
 ------ Cambio unidades
@@ -36,7 +38,7 @@ GROUP BY M.idBodega,M.Referencia, M.Unidad
 
 
 -- Cabezas, Kilo, Precio, Costo
-SELECT m.Codigo, m.Descripcion, m.idBodega, M.idCapa, 
+SELECT m.Codigo, m.Descripcion, m.idBodega AS Granja, M.idCapa AS Capa, 
 	TRY_CAST(SUBSTRING(m.idCapa,8,2)+'/'+SUBSTRING(m.idCapa,10,2)+'/20'+SUBSTRING(m.idCapa,12,2)AS DATE) AS FechaDestete,
 	MAX(M.Fecha) AS FechaSalida,
 	DATEDIFF(day, TRY_CAST(SUBSTRING(m.idCapa,8,2)+'/'+SUBSTRING(m.idCapa,10,2)+'/20'+SUBSTRING(m.idCapa,12,2)AS DATE),MAX(M.Fecha)) AS Duracion,
@@ -61,7 +63,7 @@ GROUP BY M.idBodega, M.Referencia
 
 
 
-SELECT F.idBodega AS Almacen, F.idCapa AS Capa, SUM(MVP.Costo)*-1 AS Costo
+SELECT F.idBodega AS Granja, F.idCapa AS Capa, SUM(MVP.Costo)*-1 AS Costo, (SUM(MVP.Costo)*-1)/NULLIF(SUM(F.Cantidad)*-1,0)
 FROM dbo.gridMovimientosInventario AS F INNER JOIN dbo.gridMovimientosInventario MVP ON F.idCapa= MPV.Referencia
 WHERE MVP.TipoMovimiento = 'Salida por traspaso de corral' AND MVP.NombreLinea = 'Medicamento Preventivo Veterinario' 
 AND (F.NombreLinea = 'Cerdos para venta' OR F.NombreLinea = 'Cerdos Cerdos Pie de Cría') 
@@ -69,8 +71,9 @@ AND (F.TipoMovimiento = 'Salida por facturación' OR F.TipoMovimiento = 'Cancela
 GROUP BY F.idBodega, F.idCapa
 
 
+
 ---------------------------------------------------------------- GASTO
-SELECT F.idBodega AS Almacen, F.idCapa AS Capa, SUM(G.Costo)*-1 AS Gasto, 
+SELECT F.idBodega AS Granja, F.idCapa AS Capa, SUM(G.Costo)*-1 AS Gasto, 
 (SUM(G.Costo)*-1)/NULLIF(SUM(F.Cantidad)*-1,0) AS GastoxCabezas
 		FROM dbo.gridMovimientosInventario AS F INNER JOIN dbo.gridMovimientosInventario G ON F.idCapa= G.Referencia
 	WHERE G.TipoMovimiento = 'Gasto en corral' AND F.idBodega LIKE 'GV%'  AND (F.NombreLinea = 'Cerdos para venta' OR F.NombreLinea = 'Cerdos Cerdos Pie de Cría') 
@@ -78,8 +81,52 @@ SELECT F.idBodega AS Almacen, F.idCapa AS Capa, SUM(G.Costo)*-1 AS Gasto,
 GROUP BY F.idBodega, F.idCapa
 
 
+
 SELECT M.idBodega, M.Referencia,SUM(M.Costo)*-1 AS Gasto, (SUM(M.Costo)*-1)/NULLIF(SUM(M2.Cantidad)*-1,0) AS GastoxCabezas
 		FROM dbo.gridMovimientosInventario AS M INNER JOIN dbo.gridMovimientosInventario m2 ON M.Referencia = M2.idCapa
 	WHERE M.TipoMovimiento = 'Gasto en corral' AND M.idBodega LIKE 'GV%'  AND (M2.NombreLinea = 'Cerdos para venta' OR M2.NombreLinea = 'Cerdos Cerdos Pie de Cría') 
 		AND (M2.TipoMovimiento = 'Salida por facturación' OR M2.TipoMovimiento = 'Cancelación')
 GROUP BY M.idBodega, M.Referencia
+
+
+--------------------------------------------------------------- FUERZA LABORAL/ CAPACIDAD
+SELECT SUBSTRING(F.idBodega,1,3),  
+CASE SUBSTRING(F.idBodega,1,3) WHEN 'GV1' THEN SUM(F.Cantidad)*-1
+WHEN 'GV2' THEN SUM(F.Cantidad)*-1
+WHEN 'GV3' THEN SUM(F.Cantidad)*-1
+WHEN 'GV4' THEN SUM(F.Cantidad)*-1
+WHEN 'GV5' THEN SUM(F.Cantidad)*-1
+END AS Cabezas,
+CASE SUBSTRING(F.idBodega,1,3) WHEN 'GV1' THEN (SUM(F.Cantidad)*-1)/4
+WHEN 'GV2' THEN (SUM(F.Cantidad)*-1)/4
+WHEN 'GV3' THEN (SUM(F.Cantidad)*-1)/10
+WHEN 'GV4' THEN (SUM(F.Cantidad)*-1)/6
+WHEN 'GV5' THEN (SUM(F.Cantidad)*-1)/2
+WHEN 'GV6' THEN (SUM(F.Cantidad)*-1)/5
+END AS CabezasxPersonal,
+CASE SUBSTRING(F.idBodega,1,3) WHEN 'GV1' THEN (SUM(F.Cantidad)*-1)/2600
+WHEN 'GV2' THEN (SUM(F.Cantidad)*-1)/300
+WHEN 'GV3' THEN (SUM(F.Cantidad)*-1)/550
+WHEN 'GV4' THEN (SUM(F.Cantidad)*-1)/6000
+WHEN 'GV5' THEN (SUM(F.Cantidad)*-1)/4500
+WHEN 'GV6' THEN (SUM(F.Cantidad)*-1)/350
+END AS CapacidadGranja
+FROM dbo.gridMovimientosInventario AS F
+WHERE (F.NombreLinea = 'Cerdos para venta' OR F.NombreLinea = 'Cerdos Cerdos Pie de Cría') 
+AND (F.TipoMovimiento = 'Salida por facturación' OR F.TipoMovimiento = 'Cancelación')
+AND F.idBodega LIKE 'GV%'
+GROUP BY SUBSTRING(F.idBodega,1,3)
+
+--------------------------------------------------------------- Muertes General
+SELECT F.idBodega AS Granja, F.idCapa AS Capa, SUM(M.Salida) AS CantidadMuerte, 
+	 SUM(M.Salida)/NULLIF( SUM(M.Salida)+SUM(F.Cantidad)*-1,0) AS TasaMortalidad
+FROM dbo.gridMovimientosInventario F INNER JOIN dbo.gridMovimientosInventario M  ON F.idCapa = M.idCapa 
+WHERE M.TipoMovimiento = 'Salida por muerte animal' AND M.NombreLinea = 'Cerdos para venta' 
+		AND (F.NombreLinea = 'Cerdos para venta' OR F.NombreLinea = 'Cerdos Cerdos Pie de Cría') 
+		AND (F.TipoMovimiento = 'Salida por facturación' OR F.TipoMovimiento = 'Cancelación')	
+GROUP BY F.idBodega, F.idCapa
+
+
+
+
+

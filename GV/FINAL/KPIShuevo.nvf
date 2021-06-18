@@ -1,0 +1,185 @@
+<?xml version="1.0"?>
+<Vision xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema">
+  <Tablas>
+    <Tabla>
+      <HasChanges>true</HasChanges>
+      <id>3f87fbff-412c-4348-be78-2073a35c3240</id>
+      <idPadre>00000000-0000-0000-0000-000000000000</idPadre>
+      <Nombre>Med Prev Veterinario</Nombre>
+      <Sentencia>SELECT mvp.idBodega AS Granja, mvp.Referencia AS Capa, DATEPART(year, MVP.Fecha) AS Año,
+	SUM(MVP.Costo)*-1 AS Costo 
+	FROM dbo.gridMovimientosInventario MVP
+	WHERE MVP.TipoMovimiento = 'Salida por traspaso de corral' AND MVP.NombreLinea = 'Medicamento Preventivo Veterinario' 
+		AND mvp.idBodega LIKE 'ASJP%' AND mvp.EntradaSalida = 'S'
+	GROUP BY mvp.idBodega, mvp.Referencia, DATEPART(year, MVP.Fecha)</Sentencia>
+    </Tabla>
+    <Tabla>
+      <HasChanges>false</HasChanges>
+      <id>a1440b87-d360-44a8-ade2-1bc4225e324f</id>
+      <idPadre>00000000-0000-0000-0000-000000000000</idPadre>
+      <Nombre>Sueldos y prestaciones</Nombre>
+      <Sentencia>SELECT G.idBodega AS Granja, G.Referencia, SUM(G.Costo)*-1,  DATEPART(YEAR,G.Fecha) AS Año,
+	min(g.Fecha) AS fechainicio, max(g.Fecha) AS fechafinal
+	FROM dbo.gridMovimientosInventario G
+	WHERE G.TipoMovimiento = 'Gasto en corral' AND g.NombreLinea = 'Sueldos y Prestaciones' 
+		AND G.idBodega LIKE 'ASJP%'  
+	GROUP BY G.idBodega, G.Referencia, DATEPART(YEAR,G.Fecha)</Sentencia>
+    </Tabla>
+    <Tabla>
+      <HasChanges>false</HasChanges>
+      <id>45df836a-62b7-4288-be08-4885acc2184f</id>
+      <idPadre>00000000-0000-0000-0000-000000000000</idPadre>
+      <Nombre>Gastos Directos</Nombre>
+      <Sentencia>SELECT G.idBodega AS Granja, G.Referencia, SUM(G.Costo)*-1,  DATEPART(YEAR,G.Fecha) AS Año
+	FROM dbo.gridMovimientosInventario G
+	WHERE G.TipoMovimiento = 'Gasto en corral' AND g.NombreLinea = 'Gastos Directos' 
+		AND G.idBodega LIKE 'ASJP%'  
+GROUP BY G.idBodega, G.Referencia, DATEPART(YEAR,G.Fecha)</Sentencia>
+    </Tabla>
+    <Tabla>
+      <HasChanges>false</HasChanges>
+      <id>34848d18-b3f8-47c2-9405-fd2a1b8181ae</id>
+      <idPadre>00000000-0000-0000-0000-000000000000</idPadre>
+      <Nombre>Material Venterinario</Nombre>
+      <Sentencia>SELECT mvp.idBodega AS Granja, mvp.Referencia AS Capa, DATEPART(year, MVP.Fecha) AS Año,
+SUM(MVP.Costo)*-1 AS Costo 
+	FROM dbo.gridMovimientosInventario MVP
+	WHERE MVP.TipoMovimiento = 'Salida por traspaso de corral' AND MVP.NombreLinea = 'Material  Medico Veterinario'
+		AND mvp.idBodega LIKE 'ASJP%' AND mvp.EntradaSalida = 'S'
+GROUP BY mvp.idBodega, mvp.Referencia, DATEPART(year, MVP.Fecha)</Sentencia>
+    </Tabla>
+    <Tabla>
+      <HasChanges>false</HasChanges>
+      <id>0d46350c-d569-40d8-aa09-5c73df23568a</id>
+      <idPadre>00000000-0000-0000-0000-000000000000</idPadre>
+      <Nombre>Alimento terminado y complementos</Nombre>
+      <Sentencia>SELECT mvp.idBodega AS Granja, mvp.Referencia AS Capa, DATEPART(year, MVP.Fecha) AS Año,
+SUM(MVP.Costo)*-1 AS Costo 
+	FROM dbo.gridMovimientosInventario MVP
+	WHERE MVP.TipoMovimiento = 'Salida por traspaso de corral' AND MVP.NombreLinea = 'Alimento Terminado y Complementos Alimenticios'
+		AND mvp.idBodega LIKE 'ASJP%' AND mvp.EntradaSalida = 'S'
+GROUP BY mvp.idBodega, mvp.Referencia, DATEPART(year, MVP.Fecha)</Sentencia>
+    </Tabla>
+    <Tabla>
+      <HasChanges>true</HasChanges>
+      <id>7ced055c-2d47-4eaa-9b41-6bf7a732593b</id>
+      <idPadre>00000000-0000-0000-0000-000000000000</idPadre>
+      <Nombre>Recolleccion</Nombre>
+      <Sentencia>SELECT --R.idBodegaOrigen AS Almacen, 
+	DATEPART(week,R.Fecha) AS Semana,DATEPART(year,R.Fecha) AS Año,
+	Sum(R.Cantidad) AS Cantidad,
+	Sum(R.NoCajas) AS Cajas, SUM(R.Peso) AS Kilos,
+	--G.Existencia AS Gallinas,
+	--Sum(R.Cantidad)/nullif(G.Existencia,0) AS '%Postura',
+	SUM(R.Peso)/nullif(Sum(R.NoCajas),0) AS 'Kilos por caja'
+FROM vol.gridTraspasosCorral R 
+--INNER JOIN erp.ProductoExistencia G ON R.idBodegaOrigen = G.idBodega
+WHERE R.Descripcion LIKE 'Huevo%' --AND G.idProducto = '9006'
+GROUP BY DATEPART(week,R.Fecha), DATEPART(year,R.Fecha)--,G.Existencia
+-- OBSERVACIÓN: El número de gallinas no es por historial (solo sacamos las que actual mente hay)
+-- no se saben las que hubo hace una semana</Sentencia>
+    </Tabla>
+    <Tabla>
+      <HasChanges>false</HasChanges>
+      <id>cbb62d5a-10d1-4dd7-b578-e635fb0a0127</id>
+      <idPadre>00000000-0000-0000-0000-000000000000</idPadre>
+      <Nombre>Gallinas</Nombre>
+      <Sentencia>
+SELECT * FROM erp.gridTraspasos
+--SELECT  G.idBodega ,DATEPART(week,G.Fecha) AS Semana, DATEPART(year,G.Fecha) AS Año,
+--	Sum(G.Cantidad) AS Cantidad
+--FROM dbo.gridMovimientosInventario G
+--WHERE g.Codigo = '9006' AND (g.TipoMovimiento = 'Salida por muerte animal' or
+--g.TipoMovimiento = 'Entrada por Nacimiento')
+--GROUP BY G.idBodega,DATEPART(week,G.Fecha), DATEPART(year,G.Fecha)
+
+-- Intento para sacar historial de gallinas</Sentencia>
+    </Tabla>
+    <Tabla>
+      <HasChanges>true</HasChanges>
+      <id>df6887e4-96c2-46f1-9ba1-d69952fe9404</id>
+      <idPadre>00000000-0000-0000-0000-000000000000</idPadre>
+      <Nombre>Formulaciones</Nombre>
+      <Sentencia>SELECT A.idBodega AS Almacen, A.Referencia, 
+	DATEPART(year,A.Fecha) AS Año, 
+	SUM(CASE A.Unidad WHEN 'TON' THEN A.Cantidad*-907.185 ELSE A.Cantidad*-1 END) AS 'Kilos alimento',
+	SUM(A.Costo)*-1 AS Costo
+FROM dbo.gridMovimientosInventario A
+WHERE A.TipoMovimiento = 'Salida por traspaso de corral' 
+		AND A.NombreLinea = 'Formulaciones' AND A.idBodega LIKE '%[0-9]'
+GROUP BY a.idBodega, A.Referencia, DATEPART(year,A.Fecha)
+</Sentencia>
+    </Tabla>
+    <Tabla>
+      <HasChanges>false</HasChanges>
+      <id>4d82dcc0-accb-4340-8c02-541feba7fc28</id>
+      <idPadre>00000000-0000-0000-0000-000000000000</idPadre>
+      <Nombre>Muerte</Nombre>
+      <Sentencia>SELECT  G.idBodega ,DATEPART(week,G.Fecha) AS Semana, DATEPART(year,G.Fecha) AS Año,
+	Sum(G.Cantidad)*-1 AS Cantidad
+FROM dbo.gridMovimientosInventario G
+WHERE g.Codigo = '9006' AND G.TipoMovimiento = 'Salida por muerte animal'
+GROUP BY G.idBodega, DATEPART(week,G.Fecha), DATEPART(year,G.Fecha)</Sentencia>
+    </Tabla>
+    <Tabla>
+      <HasChanges>false</HasChanges>
+      <id>f9d3af4e-8703-4c84-8491-44380d171d65</id>
+      <idPadre>00000000-0000-0000-0000-000000000000</idPadre>
+      <Nombre>Empaque</Nombre>
+      <Sentencia>SELECT E.idBodega AS Almacen, Datepart(week,E.Fecha) AS Semana,
+	Datepart(year,E.Fecha) AS Año ,SUM(E.Costo) AS Costo 
+FROM dbo.gridMovimientosInventario E
+WHERE E.TipoMovimiento = 'Traspaso de almacén' 
+	AND E.NombreLinea = 'Empaques y embalajes'
+	AND E.EntradaSalida = 'E'
+	AND E.NombreCategoria = 'Aves'
+	AND E.idBodega LIKE 'AS%'
+GROUP BY E.idBodega, Datepart(week,E.Fecha), Datepart(year,E.Fecha)</Sentencia>
+    </Tabla>
+    <Tabla>
+      <HasChanges>true</HasChanges>
+      <id>a0eba31c-a554-4ab4-b941-98938aefeda4</id>
+      <idPadre>00000000-0000-0000-0000-000000000000</idPadre>
+      <Nombre>VentaRecoleccion</Nombre>
+      <Sentencia>SELECT V.Semana, V.Año, V.Cajas, V.Kilos, V.Kilos/V.Cajas AS 'Peso Caja Vendida',
+	V.Venta, V.Costo, V.Venta/V.Kilos AS Precio,
+	 RE.KilosR, V.Kilos/RE.KilosR AS '%Kilos Rec Vendidos', 
+	V.Kilos/RE.KilosR*7 AS 'Dias Rec Vendidos'
+FROM (SELECT datepart(week,F.Fecha) AS Semana, datepart(year,F.Fecha) AS Año,
+		SUM(Try_cast(F.Kilos AS FLOAT)) AS Cajas,
+		SUM(F.Cantidad)*-1 AS Kilos, SUM(F.Venta)*-1 AS Venta,
+		SUM(F.Costo)*-1 AS Costo 
+	FROM dbo.gridMovimientosInventario F
+	WHERE (F.TipoMovimiento = 'Salida por facturación' OR F.TipoMovimiento = 'Cancelación') 
+		AND F.NombreLinea = 'Huevo' AND F.Codigo = '9010'
+		GROUP BY datepart(week,F.Fecha), datepart(year,F.Fecha)) AS V
+	LEFT JOIN ( SELECT datepart(week,R.Fecha) AS Week, 
+		datepart(year,R.Fecha) AS Year, SUM(R.Peso) AS KilosR
+		FROM vol.gridTraspasosCorral R 
+		WHERE R.Descripcion LIKE 'Huevo%'
+		GROUP BY datepart(week,R.Fecha), datepart(year,R.Fecha)) AS RE
+		ON V.Semana = RE.Week AND V.Año = RE.Year
+GROUP BY V.Semana, V.Año, V.Cajas, V.Kilos, V.Venta, V.Costo, RE.KilosR
+ORDER BY  V.Año DESC, V.Semana DESC 
+
+</Sentencia>
+    </Tabla>
+  </Tablas>
+  <Outputs />
+  <Relaciones />
+  <Parametros />
+  <ParametrosFormDesign>
+    <FormSize>
+      <Width>0</Width>
+      <Height>0</Height>
+    </FormSize>
+    <FormTitle>Valores de los parámetros de la visión</FormTitle>
+    <DateRangeEnabled>false</DateRangeEnabled>
+    <DateRangeDefaultValue>Hoy</DateRangeDefaultValue>
+  </ParametrosFormDesign>
+  <ConfiguracionCorreo>
+    <Correos />
+  </ConfiguracionCorreo>
+  <FileName>C:\Users\Natasha GO\Documents\KPIShuevo.nvf</FileName>
+  <FileReadOnly>false</FileReadOnly>
+</Vision>

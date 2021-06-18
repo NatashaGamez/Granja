@@ -1,0 +1,22 @@
+EJEMPLO UNION TABLAS (VERIFICADA)-----------------------------------------------------------------------------------------
+
+SELECT V.Semana, V.Año, V.Cajas, V.Kilos, V.Kilos/V.Cajas AS 'Peso Caja Vendida',
+	V.Venta, V.Costo, V.Venta/V.Kilos AS Precio,
+	 RE.KilosR, V.Kilos/RE.KilosR AS '%Kilos Rec Vendidos', 
+	V.Kilos/RE.KilosR*7 AS 'Dias Rec Vendidos'
+FROM (SELECT datepart(week,F.Fecha) AS Semana, datepart(year,F.Fecha) AS Año,
+		SUM(Try_cast(F.Kilos AS FLOAT)) AS Cajas,
+		SUM(F.Cantidad)*-1 AS Kilos, SUM(F.Venta)*-1 AS Venta,
+		SUM(F.Costo)*-1 AS Costo 
+	FROM dbo.gridMovimientosInventario F
+	WHERE (F.TipoMovimiento = 'Salida por facturación' OR F.TipoMovimiento = 'Cancelación') 
+		AND F.NombreLinea = 'Huevo' AND F.Codigo = '9010'
+		GROUP BY datepart(week,F.Fecha), datepart(year,F.Fecha)) AS V
+	LEFT JOIN ( SELECT datepart(week,R.Fecha) AS Week, 
+		datepart(year,R.Fecha) AS Year, SUM(R.Peso) AS KilosR
+		FROM vol.gridTraspasosCorral R 
+		WHERE R.Descripcion LIKE 'Huevo%'
+		GROUP BY datepart(week,R.Fecha), datepart(year,R.Fecha)) AS RE
+		ON V.Semana = RE.Week AND V.Año = RE.Year
+GROUP BY V.Semana, V.Año, V.Cajas, V.Kilos, V.Venta, V.Costo, RE.KilosR
+ORDER BY  V.Año DESC, V.Semana DESC 

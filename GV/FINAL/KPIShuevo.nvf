@@ -2,7 +2,7 @@
 <Vision xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema">
   <Tablas>
     <Tabla>
-      <HasChanges>true</HasChanges>
+      <HasChanges>false</HasChanges>
       <id>3f87fbff-412c-4348-be78-2073a35c3240</id>
       <idPadre>00000000-0000-0000-0000-000000000000</idPadre>
       <Nombre>Med Prev Veterinario</Nombre>
@@ -61,7 +61,7 @@ SUM(MVP.Costo)*-1 AS Costo
 GROUP BY mvp.idBodega, mvp.Referencia, DATEPART(year, MVP.Fecha)</Sentencia>
     </Tabla>
     <Tabla>
-      <HasChanges>true</HasChanges>
+      <HasChanges>false</HasChanges>
       <id>7ced055c-2d47-4eaa-9b41-6bf7a732593b</id>
       <idPadre>00000000-0000-0000-0000-000000000000</idPadre>
       <Nombre>Recolleccion</Nombre>
@@ -80,23 +80,24 @@ GROUP BY DATEPART(week,R.Fecha), DATEPART(year,R.Fecha)--,G.Existencia
 -- no se saben las que hubo hace una semana</Sentencia>
     </Tabla>
     <Tabla>
-      <HasChanges>false</HasChanges>
+      <HasChanges>true</HasChanges>
       <id>cbb62d5a-10d1-4dd7-b578-e635fb0a0127</id>
       <idPadre>00000000-0000-0000-0000-000000000000</idPadre>
       <Nombre>Gallinas</Nombre>
-      <Sentencia>
-SELECT * FROM erp.gridTraspasos
---SELECT  G.idBodega ,DATEPART(week,G.Fecha) AS Semana, DATEPART(year,G.Fecha) AS Año,
---	Sum(G.Cantidad) AS Cantidad
---FROM dbo.gridMovimientosInventario G
---WHERE g.Codigo = '9006' AND (g.TipoMovimiento = 'Salida por muerte animal' or
---g.TipoMovimiento = 'Entrada por Nacimiento')
---GROUP BY G.idBodega,DATEPART(week,G.Fecha), DATEPART(year,G.Fecha)
-
--- Intento para sacar historial de gallinas</Sentencia>
+      <Sentencia>SELECT G.idBodega, G.SEMANA,G.AÑO, G.cantidad,
+	SUM(SUM(G.CANTIDAD)) OVER(PARTITION BY G.idBodega,G.Cambio ORDER BY G.AÑO, G.SEMANA)
+FROM(SELECT G.idBodega, Datepart(week,G.Fecha) AS Semana,
+	Datepart(year,G.Fecha) AS Año, G.Fecha, G.Cantidad, 
+	CASE WHEN G.Cantidad&gt;=14000 THEN G.Cantidad END AS Cambio
+	FROM erp.gridMovimientosInventario G
+	WHERE (G.TipoMovimiento = 'Salida por muerte animal' OR G.TipoMovimiento = 'Entrada por nacimiento')
+	AND G.Codigo = '9006'
+GROUP BY G.idBodega, G.Fecha, G.Cantidad)AS G
+GROUP BY  G.idBodega, G.Fecha, G.Cambio, G.SEMANA,G.AÑO, g.cantidad
+ORDER BY G.idBodega, G.AÑO, G.SEMANA</Sentencia>
     </Tabla>
     <Tabla>
-      <HasChanges>true</HasChanges>
+      <HasChanges>false</HasChanges>
       <id>df6887e4-96c2-46f1-9ba1-d69952fe9404</id>
       <idPadre>00000000-0000-0000-0000-000000000000</idPadre>
       <Nombre>Formulaciones</Nombre>
@@ -137,7 +138,7 @@ WHERE E.TipoMovimiento = 'Traspaso de almacén'
 GROUP BY E.idBodega, Datepart(week,E.Fecha), Datepart(year,E.Fecha)</Sentencia>
     </Tabla>
     <Tabla>
-      <HasChanges>true</HasChanges>
+      <HasChanges>false</HasChanges>
       <id>a0eba31c-a554-4ab4-b941-98938aefeda4</id>
       <idPadre>00000000-0000-0000-0000-000000000000</idPadre>
       <Nombre>VentaRecoleccion</Nombre>
@@ -164,6 +165,19 @@ ORDER BY  V.Año DESC, V.Semana DESC
 
 </Sentencia>
     </Tabla>
+    <Tabla>
+      <HasChanges>true</HasChanges>
+      <id>5f588b54-ed29-4b1d-8a3e-8ec9a63e2f82</id>
+      <idPadre>00000000-0000-0000-0000-000000000000</idPadre>
+      <Nombre>ASD</Nombre>
+      <Sentencia>SELECT G.idBodega, Datepart(week,G.Fecha) AS Semana,
+Datepart(year,G.Fecha) AS Año, G.Fecha, G.Cantidad, 
+	CASE WHEN G.Cantidad&gt;=14000 THEN G.Cantidad END AS Cambio
+	FROM erp.gridMovimientosInventario G
+WHERE (G.TipoMovimiento = 'Salida por muerte animal' OR G.TipoMovimiento = 'Entrada por nacimiento')
+	AND G.Codigo = '9006'
+GROUP BY G.idBodega, G.Fecha, G.Cantidad</Sentencia>
+    </Tabla>
   </Tablas>
   <Outputs />
   <Relaciones />
@@ -180,6 +194,6 @@ ORDER BY  V.Año DESC, V.Semana DESC
   <ConfiguracionCorreo>
     <Correos />
   </ConfiguracionCorreo>
-  <FileName>C:\Users\Natasha GO\Documents\KPIShuevo.nvf</FileName>
+  <FileName>C:\Users\Natasha GO\Desktop\Granja\Granja\GV\FINAL\KPIShuevo.nvf</FileName>
   <FileReadOnly>false</FileReadOnly>
 </Vision>

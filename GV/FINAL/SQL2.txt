@@ -363,3 +363,44 @@ END AS CapacidadGranja
 FROM erp.ProductoExistencia C
 WHERE C.idProducto = '9000' AND C.idCapa LIKE 'GV%'
 GROUP BY SUBSTRING(C.idCapa,1,3)
+
+
+---------------------------------HISTORIAL GALLINA--------------------------------------------------------------------------------------------------------------
+
+SELECT YEY.idBodega, YEY.Fecha, SUM(SUM(YEY.qwert)) OVER(PARTITION BY YEY.idBodega ORDER BY YEY.Fecha)
+FROM (SELECT YA.idBodega, YA.Fecha,
+	CASE WHEN YA.FILA = MIN(YA.FIL) OVER(PARTITION BY YA.idBodega) THEN
+	YA.Bu ELSE YA.Cantidad END AS qwert
+FROM (SELECT A.FILA,A.idBodega, A.Fecha, A.Cantidad, B.B, 
+		CASE WHEN A.Cantidad>10000 THEN A.FILA END AS FIL,
+		A.Cantidad - CASE  A.TipoMovimiento WHEN 'Entrada por nacimiento' 
+		THEN B.B ELSE 0 END AS Bu
+	FROM (SELECT RANK() OVER (ORDER BY G.idBodega, G.Fecha) FILA,
+		G.idBodega,G.Fecha, G.Cantidad, G.TipoMovimiento,
+		SUM(SUM(G.Cantidad)) OVER(PARTITION BY G.idBodega ORDER BY G.Fecha) AS B
+		FROM dbo.gridMovimientosInventario g
+			WHERE (G.TipoMovimiento = 'Salida por muerte animal' OR G.TipoMovimiento = 'Entrada por nacimiento' )
+				AND G.Codigo = '9006'
+		GROUP BY G.idBodega,G.Cantidad,G.Fecha, G.TipoMovimiento) AS A
+		LEFT JOIN (SELECT RANK() OVER (ORDER BY G.idBodega, G.Fecha) FILA,
+		SUM(SUM(G.Cantidad)) OVER(PARTITION BY G.idBodega ORDER BY G.Fecha) AS B
+			FROM dbo.gridMovimientosInventario g
+		WHERE (G.TipoMovimiento = 'Salida por muerte animal' OR G.TipoMovimiento = 'Entrada por nacimiento' )
+					AND G.Codigo = '9006'
+			GROUP BY G.idBodega,G.Cantidad,G.Fecha, G.TipoMovimiento) AS B
+	ON A.FILA = B.FILA+1
+	GROUP BY A.FILA, A.idBodega, A.Fecha, A.Cantidad, B.B, A.TipoMovimiento) AS YA
+LEFT JOIN (SELECT G.idBodega,G.Fecha, G.Cantidad, G.TipoMovimiento
+	FROM dbo.gridMovimientosInventario g
+	WHERE (G.TipoMovimiento = 'Salida por muerte animal' OR G.TipoMovimiento = 'Entrada por nacimiento' )
+	AND G.Codigo = '9006'
+	GROUP BY G.idBodega,G.Cantidad,G.Fecha, G.TipoMovimiento) AS AA
+ON YA.Fecha = AA.Fecha
+	GROUP BY YA.idBodega, YA.Fecha, YA.FIL, YA.FILA, YA.Cantidad, Ya.Bu) AS YEY
+LEFT JOIN (SELECT G.idBodega,G.Fecha, G.Cantidad, G.TipoMovimiento
+	FROM dbo.gridMovimientosInventario g
+	WHERE (G.TipoMovimiento = 'Salida por muerte animal' OR G.TipoMovimiento = 'Entrada por nacimiento' )
+		AND G.Codigo = '9006'
+	GROUP BY G.idBodega,G.Cantidad,G.Fecha, G.TipoMovimiento) AS SS
+ON YEY.Fecha = SS.Fecha
+GROUP BY YEY.idBodega, YEY.Fecha

@@ -1,0 +1,584 @@
+<?xml version="1.0"?>
+<Vision xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema">
+  <Tablas>
+    <Tabla>
+      <HasChanges>true</HasChanges>
+      <id>32d249c4-297e-428f-8217-c59b09f4e6ba</id>
+      <idPadre>00000000-0000-0000-0000-000000000000</idPadre>
+      <Nombre>Engorda Gastos, alim, med</Nombre>
+      <Sentencia>SELECT V.idCapa AS Capa, V.Cabezas,
+	GD.Gasto AS 'Gastos Direc', GD.Gasto/NULLIF(V.Cabezas,0) AS 'Gasto Direc por Cabeza',
+	SP.Gasto AS 'Sueldos y Pres', SP.Gasto/NULLIF(V.Cabezas,0) AS 'Sueldos y Pres por Cabeza',
+	A.KilosConsumidos AS Alimento, A.Costo,
+	A.KilosConsumidos/nullif(V.Cabezas,0) 'Alimento por cabeza',
+	A.Costo/nullif(V.Cabezas,0) AS 'Costo por Cabeza',
+	MP.Costo AS 'Costo MP', MP.Costo/nullif(V.Cabezas,0) AS 'Costo por Cabeza MP',
+	MV.Costo AS 'Costo MV', MV.Costo/nullif(V.Cabezas,0) AS 'Costo por Cabeza MV',
+	ATCA.Costo AS 'Costo ATCA', ATCA.Costo/nullif(V.Cabezas,0) AS 'Costo por Cabeza ATCA'
+FROM (SELECT M.idCapa, SUM(M.Cantidad)*-1 AS Cabezas 
+	FROM dbo.gridMovimientosInventario AS M
+	WHERE (M.NombreLinea = 'Cerdos para venta' OR M.NombreLinea = 'Cerdos Cerdos Pie de Cría') 
+		AND (M.TipoMovimiento = 'Salida por facturación' OR M.TipoMovimiento = 'Cancelación')
+		AND LEN(M.idCapa)=13
+		AND M.idCapa LIKE 'GV%' 
+	GROUP BY M.idCapa, datepart(month,M.Fecha), datepart(year,M.Fecha)
+	HAVING DATEPART(MONTH,@FechaInicio) &lt;= datepart(month, M.Fecha) 
+		AND DATEPART(MONTH,@FechaFinal) &gt;= datepart(month, M.Fecha) 
+		AND  DATEPART(YEAR,@FechaInicio) &lt;= datepart(YEAR, M.Fecha) 
+		AND DATEPART(YEAR,@FechaFinal) &gt;= datepart(YEAR, M.Fecha)) AS V
+LEFT JOIN (SELECT mvp.Referencia AS Capa,
+	min(mvp.Fecha) AS fechaincial, max(mvp.Fecha) AS fechafinal,
+	SUM(MVP.Costo)*-1 AS Costo 
+	FROM dbo.gridMovimientosInventario MVP  
+	WHERE MVP.TipoMovimiento = 'Salida por traspaso de corral' 
+		AND MVP.NombreLinea = 'Medicamento Preventivo Veterinario' 
+		AND mvp.idBodega LIKE 'GV%' AND mvp.EntradaSalida = 'S' 
+		AND mvp.Referencia LIKE 'GV%' 
+		AND (mvp.idBodega LIKE '%[0-9]' OR mvp.idBodega = 'GV5PROD')
+	GROUP BY mvp.Referencia) AS MP
+ON V.idCapa = MP.Capa
+LEFT JOIN (SELECT mvp.Referencia AS Capa,
+	min(mvp.Fecha) AS fechaincial, max(mvp.Fecha) AS fechafinal,
+	SUM(MVP.Costo)*-1 AS Costo 
+	FROM dbo.gridMovimientosInventario MVP  
+	WHERE MVP.TipoMovimiento = 'Salida por traspaso de corral' 
+		AND MVP.NombreLinea =  'Material  Medico Veterinario'
+		AND mvp.idBodega LIKE 'GV%' AND mvp.EntradaSalida = 'S' 
+		AND mvp.Referencia LIKE 'GV%' 
+		AND (mvp.idBodega LIKE '%[0-9]' OR mvp.idBodega = 'GV5PROD')
+	GROUP BY mvp.Referencia) AS MV
+ON V.idCapa = MV.Capa
+LEFT JOIN (SELECT mvp.Referencia AS Capa,
+	min(mvp.Fecha) AS fechaincial, max(mvp.Fecha) AS fechafinal,
+	SUM(MVP.Costo)*-1 AS Costo 
+	FROM dbo.gridMovimientosInventario MVP  
+	WHERE MVP.TipoMovimiento = 'Salida por traspaso de corral' 
+		AND MVP.NombreLinea =  'Alimento Terminado y Complementos Alimenticios'
+		AND mvp.idBodega LIKE 'GV%' AND mvp.EntradaSalida = 'S' 
+		AND mvp.Referencia LIKE 'GV%' 
+		AND (mvp.idBodega LIKE '%[0-9]' OR mvp.idBodega = 'GV5PROD')
+	GROUP BY mvp.Referencia) AS ATCA
+ON V.idCapa = ATCA.Capa
+LEFT JOIN (SELECT M.Referencia AS Capa,
+	SUM(CASE M.Unidad WHEN 'TON' THEN M.Cantidad*-907.185 ELSE M.Cantidad*-1 END) AS KilosConsumidos,
+	SUM(M.Costo)*-1 AS Costo
+	FROM dbo.gridMovimientosInventario M  
+	WHERE M.TipoMovimiento = 'Salida por traspaso de corral' AND M.NombreLinea = 'Formulaciones' 
+	AND M.Referencia LIKE 'GV%' 
+	AND (M.idBodega LIKE '%[0-9]' OR M.idBodega = 'GV5PROD')
+	AND (M.idBodega LIKE 'GV1%' OR M.idBodega LIKE 'GV4%' OR M.idBodega LIKE 'GV5%')
+	GROUP BY M.Referencia) AS A
+ON V.idCapa = A.Capa
+LEFT JOIN ( SELECT G.Referencia AS Capa,
+	min(g.Fecha) AS fechainicio, max(g.Fecha) AS fechafinal,
+	SUM(G.Costo)*-1 AS Gasto
+	FROM dbo.gridMovimientosInventario G
+	WHERE G.TipoMovimiento = 'Gasto en corral' AND g.NombreLinea = 'Gastos Directos' 
+		AND G.Referencia LIKE 'GV%' 
+		AND (G.idBodega LIKE '%[0-9]' OR G.idBodega = 'GV5PROD') 
+	GROUP BY G.Referencia) AS GD
+ON V.idCapa = GD.Capa
+LEFT JOIN ( SELECT G.Referencia AS Capa,
+	min(g.Fecha) AS fechainicio, max(g.Fecha) AS fechafinal,
+	SUM(G.Costo)*-1 AS Gasto
+	FROM dbo.gridMovimientosInventario G
+	WHERE G.TipoMovimiento = 'Gasto en corral' AND G.NombreLinea = 'Sueldos y Prestaciones' 
+		AND G.Referencia LIKE 'GV%' 
+		AND (G.idBodega LIKE '%[0-9]' OR G.idBodega = 'GV5PROD') 
+	GROUP BY G.Referencia) AS SP
+ON V.idCapa = SP.Capa
+GROUP BY V.idCapa, V.Cabezas, GD.Gasto, SP.Gasto, A.KilosConsumidos, A.Costo, MP.Costo, MV.Costo, ATCA.Costo</Sentencia>
+    </Tabla>
+    <Tabla>
+      <HasChanges>true</HasChanges>
+      <id>9fb5bff7-90fa-4ab0-802e-50814bd5a74d</id>
+      <idPadre>00000000-0000-0000-0000-000000000000</idPadre>
+      <Nombre>Cabezas Kilos Costo cerdos</Nombre>
+      <Sentencia>SELECT V.idCapa,V.Duracion, V.Cabezas AS 'Cabezas Vendidas', E.Existencia AS 'Faltan Vender',
+	v.kilos, V.PesoPromedio, V.PrecioxKilo, V.Costo, V.CostoxKilo, V.CostoxCabeza
+FROM (SELECT M.idCapa, 
+		TRY_CAST(SUBSTRING(m.idCapa,8,2)+'/'+SUBSTRING(m.idCapa,10,2)+'/20'+SUBSTRING(m.idCapa,12,2)AS DATE) AS FechaDestete,
+		DATEPART(month,M.Fecha) AS Mes,
+		DATEDIFF(day, TRY_CAST(SUBSTRING(m.idCapa,8,2)+'/'+SUBSTRING(m.idCapa,10,2)+'/20'+SUBSTRING(m.idCapa,12,2)AS DATE),MAX(M.Fecha)) AS Duracion,
+		SUM(M.Cantidad)*-1 AS Cabezas,
+		sum(CONVERT(FLOAT,m.Kilos)) AS Kilos,
+		 sum(CONVERT(FLOAT,m.Kilos))/NULLIF(SUM(M.Cantidad)*-1,0) AS PesoPromedio,
+		(Sum(M.Venta)*-1)/NULLIF(sum(CONVERT(FLOAT,m.Kilos)),0) AS PrecioxKilo, 
+		(Sum(m.Costo)*-1)/NULLIF(sum(CONVERT(FLOAT,m.Kilos)),0) AS CostoxKilo,
+		SUM(M.Costo)*-1 AS Costo,
+		SUM(M.Costo)/SUM(M.Cantidad) AS CostoxCabeza
+	FROM dbo.gridMovimientosInventario AS M
+			WHERE (M.NombreLinea = 'Cerdos para venta' OR M.NombreLinea = 'Cerdos Cerdos Pie de Cría') 
+			AND (M.TipoMovimiento = 'Salida por facturación' OR M.TipoMovimiento = 'Cancelación')
+			AND LEN(M.idCapa)=13 AND M.idCapa LIKE 'GV%' 
+	GROUP BY M.idCapa, datepart(month,M.Fecha),datepart(year,M.Fecha)
+	HAVING DATEPART(MONTH,@FechaInicio) &lt;= datepart(month, M.Fecha) 
+	AND DATEPART(MONTH,@FechaFinal) &gt;= datepart(month, M.Fecha) 
+	AND  DATEPART(YEAR,@FechaInicio) &lt;= datepart(YEAR, M.Fecha) 
+	AND DATEPART(YEAR,@FechaFinal) &gt;= datepart(YEAR, M.Fecha)) AS V
+	LEFT JOIN (SELECT D.idCapa AS Capa,
+		MAX(D.Fecha) as FechaEngorda,
+		TRY_CAST(SUBSTRING(D.idCapa,8,2)+'/'+SUBSTRING(D.idCapa,10,2)+'/20'+SUBSTRING(D.idCapa,12,2)AS DATE) AS FechaDestete,
+	DATEDIFF(DAY,TRY_CAST(SUBSTRING(D.idCapa,8,2)+'/'+SUBSTRING(D.idCapa,10,2)+'/20'+SUBSTRING(D.idCapa,12,2)AS DATE),MAX(D.Fecha)) AS DuracionDestete,
+	MAX(D.Entrada) AS Cabezas,
+	MIN(D.Costo) AS 'Costo Incio Destete',
+	MIN(D.Costo)/nullif(MAX(D.Entrada),0) AS 'Costo Inicio por Cabeza'
+		FROM dbo.gridMovimientosInventario D
+		WHERE D.TipoMovimiento = 'Entrada a corral por traspaso' 
+			AND D.NombreCategoria = 'Cerdos'
+			AND D.NombreLinea = 'Cerdos para venta'
+			--AND D.idBodega LIKE '%[A-Z]'
+	AND LEN(D.idCapa)=13
+			AND D.idBodega LIKE 'GV%' --AND D.idBodega NOT LIKE 'GV5%' 
+			AND D.idCapa LIKE 'GV%'
+		GROUP BY D.idCapa) AS DE
+	ON V.idCapa = DE.Capa
+	LEFT JOIN (SELECT M.idCapa AS Capa, SUM(M.Salida)  AS  Muertes
+		FROM dbo.gridMovimientosInventario M
+		WHERE M.TipoMovimiento = 'Salida por muerte animal' AND M.NombreLinea = 'Cerdos para venta' 
+			AND LEN(M.idCapa)=13 AND M.idCapa LIKE 'GV%' 
+	GROUP BY M.idCapa) AS ME
+	ON V.idCapa = ME.Capa
+	LEFT JOIN (SELECT E.idCapa, SUM(E.Existencia) AS Existencia FROM erp.ProductoExistencia E
+	WHERE E.idCapa LIKE 'gv%' AND E.idProducto = '9000'
+	GROUP BY E.idCapa) AS E
+	ON V.idCapa = E.idCapa
+GROUP BY V.idCapa, DE.Cabezas, V.Cabezas,E.Existencia,
+V.Duracion, V.PesoPromedio, V.PrecioxKilo, V.CostoxKilo, ME.Muertes, V.Costo,V.CostoxCabeza, v.kilos
+</Sentencia>
+    </Tabla>
+    <Tabla>
+      <HasChanges>false</HasChanges>
+      <id>ffd2a9cf-cb85-4aff-a949-1c2930fd5178</id>
+      <idPadre>00000000-0000-0000-0000-000000000000</idPadre>
+      <Nombre>FuerzaLaborlaCapacidadGranja</Nombre>
+      <Sentencia>SELECT SUBSTRING(C.idCapa,1,3),
+CASE SUBSTRING(C.idCapa,1,3) WHEN 'GV1' THEN SUM(C.Existencia)
+WHEN 'GV2' THEN SUM(C.Existencia)
+WHEN 'GV3' THEN SUM(C.Existencia)
+WHEN 'GV4' THEN SUM(C.Existencia)
+WHEN 'GV5' THEN SUM(C.Existencia)
+WHEN 'GV6' THEN SUM(C.Existencia)
+END AS Cabezas,
+CASE SUBSTRING(C.idCapa,1,3) WHEN 'GV1' THEN (SUM(C.Existencia))/4
+WHEN 'GV2' THEN (SUM(C.Existencia))/4
+WHEN 'GV3' THEN (SUM(C.Existencia))/10
+WHEN 'GV4' THEN (SUM(C.Existencia))/6
+WHEN 'GV5' THEN (SUM(C.Existencia))/2
+WHEN 'GV6' THEN (SUM(C.Existencia))/5
+END AS CabezasxPersonal,
+CASE SUBSTRING(C.idCapa,1,3) WHEN 'GV1' THEN (SUM(C.Existencia))/2600
+WHEN 'GV2' THEN (SUM(C.Existencia))/300
+WHEN 'GV3' THEN (SUM(C.Existencia))/550
+WHEN 'GV4' THEN (SUM(C.Existencia))/6000
+WHEN 'GV5' THEN (SUM(C.Existencia))/4500
+WHEN 'GV6' THEN (SUM(C.Existencia))/350
+END AS CapacidadGranja
+FROM erp.ProductoExistencia C
+WHERE C.idProducto = '9000' AND C.idCapa LIKE 'GV%'
+GROUP BY SUBSTRING(C.idCapa,1,3)
+</Sentencia>
+    </Tabla>
+    <Tabla>
+      <HasChanges>false</HasChanges>
+      <id>ff0f4b33-84af-49a0-9bd3-87a00a7204fa</id>
+      <idPadre>00000000-0000-0000-0000-000000000000</idPadre>
+      <Nombre>Muertes Cerdos EngordaDeste</Nombre>
+      <Sentencia>SELECT V.idCapa AS Capa, V.Cabezas AS 'Cabezas Vendidas', DE.Cabezas AS 'Cabezas E destete',
+	CASE WHEN V.Cabezas  &lt; (ISNULL(DE.Cabezas,0) - ISNULL(ME.Muertes,0) - ISNULL(MD.Muertes,0)) THEN 'Existencia en sistema'
+		WHEN V.Cabezas  = (ISNULL(DE.Cabezas,0) - ISNULL(ME.Muertes,0) - ISNULL(MD.Muertes,0)) THEN 'Vendida por completo'
+		WHEN V.Cabezas  &gt; (ISNULL(DE.Cabezas,0) - ISNULL(ME.Muertes,0) - ISNULL(MD.Muertes,0)) THEN 'Cerdos Vendidos de más'
+		END AS 'Estado de capa',
+	ME.Muertes AS 'Muertes Engorda', ME.Muertes/NULLIF(DE.Cabezas-ISNULL(MD.Muertes,0),0) AS '% Mortalidad Engorda',
+	MD.Muertes AS 'Muertes Destete', MD.Muertes/NULLIF(DE.Cabezas,0) AS '% Moralidad Destete'
+FROM (SELECT M.idCapa, SUM(M.Cantidad)*-1 AS Cabezas 
+	FROM dbo.gridMovimientosInventario AS M
+	WHERE (M.NombreLinea = 'Cerdos para venta' OR M.NombreLinea = 'Cerdos Cerdos Pie de Cría') 
+		AND (M.TipoMovimiento = 'Salida por facturación' OR M.TipoMovimiento = 'Cancelación')
+		AND LEN(M.idCapa)=13
+		AND m.idCapa LIKE 'GV%' 
+		--AND (m.idBodega LIKE '%[0-9]' OR m.idBodega = 'GV5PROD')
+	GROUP BY M.idCapa, datepart(month,M.Fecha),datepart(year,M.Fecha)
+	HAVING DATEPART(MONTH,@FechaInicio) &lt;= datepart(month, M.Fecha) 
+		AND DATEPART(MONTH,@FechaFinal) &gt;= datepart(month, M.Fecha) 
+		AND  DATEPART(YEAR,@FechaInicio) &lt;= datepart(YEAR, M.Fecha) 
+		AND DATEPART(YEAR,@FechaFinal) &gt;= datepart(YEAR, M.Fecha)) AS V
+LEFT JOIN (SELECT M.idCapa AS Capa, SUM(M.Salida)  AS  Muertes
+	FROM dbo.gridMovimientosInventario M
+	WHERE M.TipoMovimiento = 'Salida por muerte animal' AND M.NombreLinea = 'Cerdos para venta'
+		AND (M.idBodega LIKE '%[0-9]' OR M.idBodega = 'GV5PROD' OR M.idBodega LIKE 'EMB%') 
+		AND LEN(M.idCapa)=13 AND M.idCapa LIKE 'GV%' 
+	GROUP BY M.idCapa) AS ME
+ON V.idCapa = ME.Capa
+LEFT JOIN (SELECT M.idCapa AS Capa, SUM(M.Salida) AS Muertes
+	FROM dbo.gridMovimientosInventario M
+	WHERE M.TipoMovimiento = 'Salida por muerte animal' AND M.NombreLinea = 'Cerdos para venta'
+	AND (M.idBodega LIKE '%[A-Z]' AND M.idBodega &lt;&gt; 'GV5PROD' AND M.idBodega NOT LIKE 'EMB%') 
+	AND LEN(M.idCapa)=13 AND M.idCapa LIKE 'GV%' 
+	GROUP BY M.idCapa) AS MD
+ON V.idCapa = MD.Capa
+LEFT JOIN (SELECT D.idCapa AS Capa,
+		MAX(D.Fecha) as FechaEngorda,
+		TRY_CAST(SUBSTRING(D.idCapa,8,2)+'/'+SUBSTRING(D.idCapa,10,2)+'/20'+SUBSTRING(D.idCapa,12,2)AS DATE) AS FechaDestete,
+		DATEDIFF(DAY,TRY_CAST(SUBSTRING(D.idCapa,8,2)+'/'+SUBSTRING(D.idCapa,10,2)+'/20'+SUBSTRING(D.idCapa,12,2)AS DATE),MAX(D.Fecha)) AS DuracionDestete,
+		MAX(D.Entrada) AS Cabezas,
+		MIN(D.Costo) AS 'Costo Incio Destete',
+		MIN(D.Costo)/nullif(MAX(D.Entrada),0) AS 'Costo Inicio por Cabeza'
+	FROM dbo.gridMovimientosInventario D
+	WHERE D.TipoMovimiento = 'Entrada a corral por traspaso' 
+		AND D.NombreCategoria = 'Cerdos'
+		AND D.NombreLinea = 'Cerdos para venta'
+		--AND D.idBodega LIKE '%[A-Z]'
+		AND LEN(D.idCapa)=13
+		AND D.idBodega LIKE 'GV%' --AND D.idBodega NOT LIKE 'GV5%' 
+		AND D.idCapa LIKE 'GV%'
+	GROUP BY D.idCapa) AS DE
+ON V.idCapa = DE.Capa
+GROUP BY V.idCapa, V.Cabezas, DE.Cabezas, ME.Muertes, MD.Muertes</Sentencia>
+    </Tabla>
+    <Tabla>
+      <HasChanges>false</HasChanges>
+      <id>f6a0194c-105f-4142-a026-5e313c889ec0</id>
+      <idPadre>00000000-0000-0000-0000-000000000000</idPadre>
+      <Nombre>Destete </Nombre>
+      <Sentencia>SELECT V.idCapa AS Capa, DE.DuracionDestete, DE.Cabezas,
+GD.Gasto AS 'Gastos Direc', GD.Gasto/NULLIF(DE.Cabezas,0) AS 'Gasto Direc por Cabeza',
+SP.Gasto AS 'Sueldos y Pres', SP.Gasto/NULLIF(DE.Cabezas,0) AS 'Sueldos y Pres por Cabeza',
+	A.KilosConsumidos AS Alimento, A.Costo,
+A.KilosConsumidos/nullif(DE.Cabezas,0) 'Alimento por cabeza',
+A.Costo/nullif(DE.Cabezas,0) AS 'Costo por Cabeza',
+MP.Costo AS 'Costo MP', MP.Costo/nullif(DE.Cabezas,0) AS 'Costo por Cabeza MP',
+MV.Costo AS 'Costo MV', MV.Costo/nullif(DE.Cabezas,0) AS 'Costo por Cabeza MV',
+ATCA.Costo AS 'Costo ATCA', ATCA.Costo/nullif(DE.Cabezas,0) AS 'Costo por Cabeza ATCA'
+FROM (SELECT M.idCapa
+	FROM dbo.gridMovimientosInventario AS M
+	WHERE (M.NombreLinea = 'Cerdos para venta' OR M.NombreLinea = 'Cerdos Cerdos Pie de Cría') 
+		AND (M.TipoMovimiento = 'Salida por facturación' OR M.TipoMovimiento = 'Cancelación')
+		AND LEN(M.idCapa)=13
+		AND m.idCapa LIKE 'GV%' 
+	GROUP BY M.idCapa, datepart(month,M.Fecha),datepart(year,M.Fecha)
+	HAVING DATEPART(MONTH,@FechaInicio) &lt;= datepart(month, M.Fecha) 
+		AND DATEPART(MONTH,@FechaFinal) &gt;= datepart(month, M.Fecha) 
+		AND  DATEPART(YEAR,@FechaInicio) &lt;= datepart(YEAR, M.Fecha) 
+		AND DATEPART(YEAR,@FechaFinal) &gt;= datepart(YEAR, M.Fecha)) AS V 
+	LEFT JOIN (SELECT D.idCapa AS Capa,
+		MAX(D.Fecha) as FechaEngorda,
+		TRY_CAST(SUBSTRING(D.idCapa,8,2)+'/'+SUBSTRING(D.idCapa,10,2)+'/20'+SUBSTRING(D.idCapa,12,2)AS DATE) AS FechaDestete,
+		DATEDIFF(DAY,TRY_CAST(SUBSTRING(D.idCapa,8,2)+'/'+SUBSTRING(D.idCapa,10,2)+'/20'+SUBSTRING(D.idCapa,12,2)AS DATE),MAX(D.Fecha)) AS DuracionDestete,
+		Min(D.Entrada) AS Cabezas
+	FROM dbo.gridMovimientosInventario D
+	WHERE D.TipoMovimiento = 'Entrada a corral por traspaso' 
+		AND D.NombreCategoria = 'Cerdos'
+		AND D.NombreLinea = 'Cerdos para venta'
+		AND D.idBodega LIKE '%[A-Z]'
+		AND LEN(D.idCapa)=13
+		AND D.idBodega LIKE 'GV%' AND D.idBodega NOT LIKE 'GV5%' 
+		AND D.idCapa LIKE 'GV%'
+	GROUP BY D.idCapa) AS DE
+	ON V.idCapa = DE.Capa
+LEFT JOIN (SELECT mvp.Referencia AS Capa,
+	min(mvp.Fecha) AS fechaincial, max(mvp.Fecha) AS fechafinal,
+	SUM(MVP.Costo)*-1 AS Costo 
+	FROM dbo.gridMovimientosInventario MVP  
+	WHERE MVP.TipoMovimiento = 'Salida por traspaso de corral' 
+		AND MVP.NombreLinea = 'Medicamento Preventivo Veterinario' 
+		AND mvp.idBodega LIKE 'GV%' AND mvp.EntradaSalida = 'S' 
+		AND mvp.Referencia LIKE 'GV%' 
+		AND MVP.idBodega LIKE '%[A-Z]' AND MVP.idBodega &lt;&gt; 'GV5PROD' 
+	GROUP BY mvp.Referencia) AS MP
+ON DE.Capa = MP.Capa
+LEFT JOIN (SELECT mvp.Referencia AS Capa,
+	min(mvp.Fecha) AS fechaincial, max(mvp.Fecha) AS fechafinal,
+	SUM(MVP.Costo)*-1 AS Costo 
+	FROM dbo.gridMovimientosInventario MVP  
+	WHERE MVP.TipoMovimiento = 'Salida por traspaso de corral' 
+		AND MVP.NombreLinea =  'Material  Medico Veterinario'
+		AND mvp.idBodega LIKE 'GV%' AND mvp.EntradaSalida = 'S' 
+		AND mvp.Referencia LIKE 'GV%' 
+		AND MVP.idBodega LIKE '%[A-Z]' AND MVP.idBodega &lt;&gt; 'GV5PROD' 
+	GROUP BY mvp.Referencia) AS MV
+ON DE.Capa = MV.Capa
+LEFT JOIN (SELECT mvp.Referencia AS Capa,
+	min(mvp.Fecha) AS fechaincial, max(mvp.Fecha) AS fechafinal,
+	SUM(MVP.Costo)*-1 AS Costo 
+	FROM dbo.gridMovimientosInventario MVP  
+	WHERE MVP.TipoMovimiento = 'Salida por traspaso de corral' 
+		AND MVP.NombreLinea =  'Alimento Terminado y Complementos Alimenticios'
+		AND mvp.idBodega LIKE 'GV%' AND mvp.EntradaSalida = 'S' 
+		AND mvp.Referencia LIKE 'GV%' 
+		AND MVP.idBodega LIKE '%[A-Z]' AND MVP.idBodega &lt;&gt; 'GV5PROD' 
+	GROUP BY mvp.Referencia) AS ATCA
+ON V.idCapa = ATCA.Capa
+LEFT JOIN (SELECT M.Referencia AS Capa,
+	SUM(CASE M.Unidad WHEN 'TON' THEN M.Cantidad*-907.185 ELSE M.Cantidad*-1 END) AS KilosConsumidos,
+SUM(M.Costo)*-1 AS Costo
+	FROM dbo.gridMovimientosInventario M  
+		WHERE M.TipoMovimiento = 'Salida por traspaso de corral' AND M.NombreLinea = 'Formulaciones' 
+		AND M.Referencia LIKE 'GV%' 
+		AND M.idBodega LIKE '%PROD' AND M.idBodega &lt;&gt; 'GV5PROD'
+	GROUP BY M.Referencia) AS A
+ON DE.Capa = A.Capa
+LEFT JOIN ( SELECT G.Referencia AS Capa,
+	min(g.Fecha) AS fechainicio, max(g.Fecha) AS fechafinal,
+	SUM(G.Costo)*-1 AS Gasto
+	FROM dbo.gridMovimientosInventario G
+	WHERE G.TipoMovimiento = 'Gasto en corral' AND g.NombreLinea = 'Gastos Directos' 
+		AND G.Referencia LIKE 'GV%' 
+		AND G.idBodega LIKE '%[A-Z]' AND G.idBodega &lt;&gt; 'GV5PROD'
+	GROUP BY G.Referencia) AS GD
+ON DE.Capa = GD.Capa
+LEFT JOIN ( SELECT G.Referencia AS Capa,
+	min(g.Fecha) AS fechainicio, max(g.Fecha) AS fechafinal,
+	SUM(G.Costo)*-1 AS Gasto
+	FROM dbo.gridMovimientosInventario G
+	WHERE G.TipoMovimiento = 'Gasto en corral' AND G.NombreLinea = 'Sueldos y Prestaciones' 
+		AND G.Referencia LIKE 'GV%' 
+		AND G.idBodega LIKE '%[A-Z]' AND G.idBodega &lt;&gt; 'GV5PROD'
+	GROUP BY G.Referencia) AS SP
+ON DE.Capa = SP.Capa
+GROUP BY V.idCapa, DE.Cabezas, DE.DuracionDestete, MP.Costo, MV.Costo, ATCA.Costo, 
+	A.KilosConsumidos, A.Costo, GD.Gasto, SP.Gasto</Sentencia>
+    </Tabla>
+    <Tabla>
+      <HasChanges>false</HasChanges>
+      <id>a7cc34cd-839b-47c7-a84c-7376e030c49d</id>
+      <idPadre>00000000-0000-0000-0000-000000000000</idPadre>
+      <Nombre>PROD gastos, alim, med</Nombre>
+      <Sentencia>SELECT V.idCapa AS Capa, DE.Cabezas, DE.CostoInicio, DE.CostoInicioporCabeza,
+	GD.Gasto AS 'Gastos Direc', GD.Gasto/NULLIF(DE.Cabezas,0) AS 'Gasto Direc por Cabeza',
+	SP.Gasto AS 'Sueldos y Pres', SP.Gasto/NULLIF(DE.Cabezas,0) AS 'Sueldos y Pres por Cabeza',
+	A.KilosConsumidos AS Alimento, A.Costo,
+	A.KilosConsumidos/nullif(DE.Cabezas,0) 'Alimento por cabeza',
+	A.Costo/nullif(DE.Cabezas,0) AS 'Costo por Cabeza',
+	MP.Costo AS 'Costo MP', MP.Costo/nullif(DE.Cabezas,0) AS 'Costo por Cabeza MP',
+	MV.Costo AS 'Costo MV', MV.Costo/nullif(DE.Cabezas,0) AS 'Costo por Cabeza MV',
+	ATCA.Costo AS 'Costo ATCA', ATCA.Costo/nullif(DE.Cabezas,0) AS 'Costo por Cabeza ATCA'
+FROM (SELECT M.idCapa
+	FROM dbo.gridMovimientosInventario AS M
+	WHERE (M.NombreLinea = 'Cerdos para venta' OR M.NombreLinea = 'Cerdos Cerdos Pie de Cría') 
+		AND (M.TipoMovimiento = 'Salida por facturación' OR M.TipoMovimiento = 'Cancelación')
+		AND LEN(M.idCapa)=13
+		AND m.idCapa LIKE 'GV%' 
+	GROUP BY M.idCapa, datepart(month,M.Fecha),datepart(year,M.Fecha)
+	HAVING DATEPART(MONTH,@FechaInicio) &lt;= datepart(month, M.Fecha) 
+		AND DATEPART(MONTH,@FechaFinal) &gt;= datepart(month, M.Fecha) 
+		AND  DATEPART(YEAR,@FechaInicio) &lt;= datepart(YEAR, M.Fecha) 
+		AND DATEPART(YEAR,@FechaFinal) &gt;= datepart(YEAR, M.Fecha)) AS V  
+	LEFT JOIN (SELECT D.idCapa AS Capa,
+	MAX(D.Entrada) AS Cabezas,
+	MIN(D.Costo) AS CostoInicio,
+	MIN(D.Costo)/nullif(MIN(D.Entrada),0) AS CostoInicioporCabeza
+	FROM dbo.gridMovimientosInventario D
+	WHERE D.TipoMovimiento = 'Entrada a corral por traspaso' 
+		AND D.NombreCategoria = 'Cerdos'
+		AND D.NombreLinea = 'Cerdos para venta'
+		AND (D.idBodega LIKE '%[A-Z]' OR D.idBodega LIKE 'GV5%')
+		AND LEN(D.idCapa)=13
+		AND D.idBodega LIKE 'GV%' 
+		AND D.idCapa LIKE 'GV%'
+	GROUP BY D.idCapa) AS DE
+ON V.idCapa = DE.Capa
+LEFT JOIN (SELECT mvp.Referencia AS Capa,
+	min(mvp.Fecha) AS fechaincial, max(mvp.Fecha) AS fechafinal,
+	SUM(MVP.Costo)*-1 AS Costo 
+	FROM dbo.gridMovimientosInventario MVP  
+	WHERE MVP.TipoMovimiento = 'Salida por traspaso de corral' 
+		AND MVP.NombreLinea = 'Medicamento Preventivo Veterinario' 
+		AND mvp.idBodega LIKE 'GV%' AND mvp.EntradaSalida = 'S' 
+		AND mvp.Referencia LIKE 'GV%' 
+		AND MVP.idBodega LIKE '%PROD' AND MVP.idBodega &lt;&gt; 'GV5PROD' 
+	GROUP BY mvp.Referencia) AS MP
+ON V.idCapa = MP.Capa
+LEFT JOIN (SELECT mvp.Referencia AS Capa,
+	min(mvp.Fecha) AS fechaincial, max(mvp.Fecha) AS fechafinal,
+	SUM(MVP.Costo)*-1 AS Costo 
+	FROM dbo.gridMovimientosInventario MVP  
+	WHERE MVP.TipoMovimiento = 'Salida por traspaso de corral' 
+		AND MVP.NombreLinea =  'Material  Medico Veterinario'
+		AND mvp.idBodega LIKE 'GV%' AND mvp.EntradaSalida = 'S' 
+		AND mvp.Referencia LIKE 'GV%' 
+		AND MVP.idBodega LIKE '%PROD' AND MVP.idBodega &lt;&gt; 'GV5PROD' 
+	GROUP BY mvp.Referencia) AS MV
+ON V.idCapa = MV.Capa
+LEFT JOIN (SELECT mvp.Referencia AS Capa,
+	min(mvp.Fecha) AS fechaincial, max(mvp.Fecha) AS fechafinal,
+	SUM(MVP.Costo)*-1 AS Costo 
+	FROM dbo.gridMovimientosInventario MVP  
+	WHERE MVP.TipoMovimiento = 'Salida por traspaso de corral' 
+		AND MVP.NombreLinea =  'Alimento Terminado y Complementos Alimenticios'
+		AND mvp.idBodega LIKE 'GV%' AND mvp.EntradaSalida = 'S' 
+		AND mvp.Referencia LIKE 'GV%' 
+		AND MVP.idBodega LIKE '%PROD' AND MVP.idBodega &lt;&gt; 'GV5PROD' 
+	GROUP BY mvp.Referencia) AS ATCA
+ON V.idCapa = ATCA.Capa
+LEFT JOIN (SELECT M.Referencia AS Capa,
+		SUM(CASE M.Unidad WHEN 'TON' THEN M.Cantidad*-907.185 ELSE M.Cantidad*-1 END) AS KilosConsumidos,
+		SUM(M.Costo)*-1 AS Costo
+	FROM dbo.gridMovimientosInventario M  
+		WHERE M.TipoMovimiento = 'Salida por traspaso de corral' AND M.NombreLinea = 'Formulaciones' 
+		AND M.Referencia LIKE 'GV%' 
+		AND M.idBodega LIKE '%PROD' AND M.idBodega &lt;&gt; 'GV5PROD'
+	GROUP BY M.Referencia) AS A
+ON V.idCapa = A.Capa
+LEFT JOIN ( SELECT G.Referencia AS Capa,
+	min(g.Fecha) AS fechainicio, max(g.Fecha) AS fechafinal,
+	SUM(G.Costo)*-1 AS Gasto
+	FROM dbo.gridMovimientosInventario G
+	WHERE G.TipoMovimiento = 'Gasto en corral' AND g.NombreLinea = 'Gastos Directos' 
+		AND G.Referencia LIKE 'GV%' 
+		AND G.idBodega LIKE '%PROD' AND G.idBodega &lt;&gt; 'GV5PROD'
+	GROUP BY G.Referencia) AS GD
+ON V.idCapa = GD.Capa
+LEFT JOIN ( SELECT G.Referencia AS Capa,
+	min(g.Fecha) AS fechainicio, max(g.Fecha) AS fechafinal,
+	SUM(G.Costo)*-1 AS Gasto
+	FROM dbo.gridMovimientosInventario G
+	WHERE G.TipoMovimiento = 'Gasto en corral' AND G.NombreLinea = 'Sueldos y Prestaciones' 
+		AND G.Referencia LIKE 'GV%' 
+		AND G.idBodega LIKE '%PROD' AND G.idBodega &lt;&gt; 'GV5PROD'
+	GROUP BY G.Referencia) AS SP
+ON V.idCapa = SP.Capa
+GROUP BY V.idCapa, DE.Cabezas, MP.Costo, MV.Costo, ATCA.Costo, 
+	DE.CostoInicio, DE.CostoInicioporCabeza,
+	A.KilosConsumidos, A.Costo, GD.Gasto, SP.Gasto
+</Sentencia>
+    </Tabla>
+  </Tablas>
+  <Outputs>
+    <Output xsi:type="OutputDashboard">
+      <Tipo>Dashboard</Tipo>
+      <Nombre>Prueba</Nombre>
+      <id>4c421b00-b6cc-4fbd-bf66-daf39d5f8bab</id>
+      <Layout>&lt;?xml version="1.0" encoding="utf-8"?&gt;
+&lt;Dashboard CurrencyCulture="es-MX"&gt;
+  &lt;Title Text="Tablero de control" /&gt;
+  &lt;DataSources&gt;
+    &lt;ObjectDataSource Name="Engorda Gastos, alim, med" ComponentName="dashboardObjectDataSource1"&gt;
+      &lt;DataSource Type="System.Data.DataTable, System.Data, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089" /&gt;
+    &lt;/ObjectDataSource&gt;
+    &lt;ObjectDataSource Name="Cabezas Kilos Costo cerdos" ComponentName="dashboardObjectDataSource2"&gt;
+      &lt;DataSource Type="System.Data.DataTable, System.Data, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089" /&gt;
+    &lt;/ObjectDataSource&gt;
+    &lt;ObjectDataSource Name="FuerzaLaborlaCapacidadGranja" ComponentName="dashboardObjectDataSource3"&gt;
+      &lt;DataSource Type="System.Data.DataTable, System.Data, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089" /&gt;
+    &lt;/ObjectDataSource&gt;
+    &lt;ObjectDataSource Name="Muertes Cerdos EngordaDeste" ComponentName="dashboardObjectDataSource4"&gt;
+      &lt;DataSource Type="System.Data.DataTable, System.Data, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089" /&gt;
+    &lt;/ObjectDataSource&gt;
+    &lt;ObjectDataSource Name="Destete " ComponentName="dashboardObjectDataSource5"&gt;
+      &lt;DataSource Type="System.Data.DataTable, System.Data, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089" /&gt;
+    &lt;/ObjectDataSource&gt;
+    &lt;ObjectDataSource Name="PROD gastos, alim, med" ComponentName="dashboardObjectDataSource6"&gt;
+      &lt;DataSource Type="System.Data.DataTable, System.Data, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089" /&gt;
+    &lt;/ObjectDataSource&gt;
+  &lt;/DataSources&gt;
+  &lt;Items&gt;
+    &lt;Pivot ComponentName="pivotDashboardItem1" Name="Cubo 1" DataSource="dashboardObjectDataSource6"&gt;
+      &lt;DataItems&gt;
+        &lt;Dimension DataMember="Capa" DefaultId="DataItem0" /&gt;
+        &lt;Measure DataMember="Alimento por cabeza" DefaultId="DataItem1" /&gt;
+        &lt;Measure DataMember="Cabezas" DefaultId="DataItem3" /&gt;
+        &lt;Measure DataMember="Alimento" DefaultId="DataItem2" /&gt;
+      &lt;/DataItems&gt;
+      &lt;Rows&gt;
+        &lt;Row DefaultId="DataItem0" /&gt;
+      &lt;/Rows&gt;
+      &lt;Values&gt;
+        &lt;Value DefaultId="DataItem3" /&gt;
+        &lt;Value DefaultId="DataItem1" /&gt;
+        &lt;Value DefaultId="DataItem2" /&gt;
+      &lt;/Values&gt;
+    &lt;/Pivot&gt;
+    &lt;Chart ComponentName="chartDashboardItem1" Name="Gráfico 1" DataSource="dashboardObjectDataSource6"&gt;
+      &lt;DataItems&gt;
+        &lt;Measure DataMember="Cabezas" DefaultId="DataItem0" /&gt;
+        &lt;Dimension DataMember="Capa" DefaultId="DataItem1" /&gt;
+      &lt;/DataItems&gt;
+      &lt;Arguments&gt;
+        &lt;Argument DefaultId="DataItem1" /&gt;
+      &lt;/Arguments&gt;
+      &lt;Panes&gt;
+        &lt;Pane Name="Panel 1"&gt;
+          &lt;Series&gt;
+            &lt;Simple&gt;
+              &lt;Value DefaultId="DataItem0" /&gt;
+            &lt;/Simple&gt;
+          &lt;/Series&gt;
+        &lt;/Pane&gt;
+      &lt;/Panes&gt;
+    &lt;/Chart&gt;
+    &lt;Card ComponentName="cardDashboardItem1" Name="Fichas 1" DataSource="dashboardObjectDataSource6"&gt;
+      &lt;DataItems&gt;
+        &lt;Measure DataMember="Costo por Cabeza" DefaultId="DataItem0"&gt;
+          &lt;NumericFormat FormatType="Number" Unit="Thousands" IncludeGroupSeparator="true" /&gt;
+        &lt;/Measure&gt;
+      &lt;/DataItems&gt;
+      &lt;Card&gt;
+        &lt;ActualValue DefaultId="DataItem0" /&gt;
+        &lt;AbsoluteVariationNumericFormat /&gt;
+        &lt;PercentVariationNumericFormat /&gt;
+        &lt;PercentOfTargetNumericFormat /&gt;
+        &lt;LayoutTemplate MinWidth="270" MaxWidth="270" Type="Centered"&gt;
+          &lt;MainValue Visible="true" ValueType="Title" DimensionIndex="0" /&gt;
+          &lt;SubValue Visible="true" ValueType="Subtitle" DimensionIndex="0" /&gt;
+          &lt;BottomValue Visible="true" ValueType="ActualValue" DimensionIndex="0" /&gt;
+          &lt;BottomSubValue1 Visible="true" ValueType="AbsoluteVariation" DimensionIndex="0" /&gt;
+          &lt;BottomSubValue2 Visible="true" ValueType="PercentVariation" DimensionIndex="0" /&gt;
+          &lt;DeltaIndicator Visible="true" /&gt;
+          &lt;Sparkline Visible="true" /&gt;
+        &lt;/LayoutTemplate&gt;
+      &lt;/Card&gt;
+    &lt;/Card&gt;
+    &lt;Card ComponentName="cardDashboardItem2" Name="Fichas 2" /&gt;
+  &lt;/Items&gt;
+  &lt;LayoutTree&gt;
+    &lt;LayoutGroup&gt;
+      &lt;LayoutGroup Orientation="Vertical" Weight="0.5"&gt;
+        &lt;LayoutItem DashboardItem="pivotDashboardItem1" Weight="0.5" /&gt;
+        &lt;LayoutItem DashboardItem="cardDashboardItem1" Weight="0.5" /&gt;
+      &lt;/LayoutGroup&gt;
+      &lt;LayoutGroup Orientation="Vertical" Weight="0.5"&gt;
+        &lt;LayoutItem DashboardItem="chartDashboardItem1" Weight="0.5" /&gt;
+        &lt;LayoutItem DashboardItem="cardDashboardItem2" Weight="0.5" /&gt;
+      &lt;/LayoutGroup&gt;
+    &lt;/LayoutGroup&gt;
+  &lt;/LayoutTree&gt;
+&lt;/Dashboard&gt;</Layout>
+    </Output>
+  </Outputs>
+  <Relaciones />
+  <Parametros>
+    <Parametro>
+      <Tipo>Fecha</Tipo>
+      <Nombre>@FechaFinal</Nombre>
+      <Valor xsi:type="xsd:dateTime">2021-07-01T00:00:00-05:00</Valor>
+      <Etiqueta>Fecha Final</Etiqueta>
+      <Orden>2</Orden>
+      <HasChanges>true</HasChanges>
+      <AskForValue>true</AskForValue>
+    </Parametro>
+    <Parametro>
+      <Tipo>Fecha</Tipo>
+      <Nombre>@FechaInicio</Nombre>
+      <Valor xsi:type="xsd:dateTime">2021-07-01T00:00:00-05:00</Valor>
+      <Etiqueta>FechaInicio</Etiqueta>
+      <Orden>3</Orden>
+      <HasChanges>true</HasChanges>
+      <AskForValue>true</AskForValue>
+    </Parametro>
+  </Parametros>
+  <ParametrosFormDesign>
+    <FormSize>
+      <Width>0</Width>
+      <Height>0</Height>
+    </FormSize>
+    <FormTitle>Valores de los parámetros de la visión</FormTitle>
+    <DateRangeEnabled>false</DateRangeEnabled>
+    <DateRangeDefaultValue>Hoy</DateRangeDefaultValue>
+  </ParametrosFormDesign>
+  <ConfiguracionCorreo>
+    <Correos />
+  </ConfiguracionCorreo>
+  <FileName>C:\Users\Natasha GO\Desktop\Granja\Granja\GV\FINAL\KPIScerdos.nvf</FileName>
+  <FileReadOnly>false</FileReadOnly>
+</Vision>

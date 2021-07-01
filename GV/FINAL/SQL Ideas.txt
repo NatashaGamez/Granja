@@ -1,0 +1,20 @@
+
+Generar array de 1-52 (52 porque son hay supuestamente 52 semanas en el año)
+
+Pero para optimizar generar array por año que existe en sistema
+	1. optener max año y min año
+	2. Con ciclo optener numero de semanas por año opteniendo el numero de semana que es el 31/12/año
+	 2.1 sacar semana con su año tipo columna 1 = 52, columan 2 = 2020
+	3. Sacar ciclo que genere columna de semanas por año 
+
+------------------------------------------------------------------------------------------------------------------
+DECLARE @MinDate DATETIME = '2012-09-23 00:02:00.000',
+    @MaxDate DATETIME = '2012-09-25 00:00:00.000';
+
+SELECT  TOP (DATEDIFF(DAY, @MinDate, @MaxDate) + 1) Dates = DATEADD(DAY, ROW_NUMBER() OVER(ORDER BY a.object_id) - 1, @MinDate)
+FROM sys.all_objects a CROSS JOIN sys.all_objects b;
+
+------------------------------------------------------------------------------------------------------------------------------------
+
+
+

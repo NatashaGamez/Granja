@@ -6,9 +6,13 @@
       <id>7ced055c-2d47-4eaa-9b41-6bf7a732593b</id>
       <idPadre>00000000-0000-0000-0000-000000000000</idPadre>
       <Nombre>Recolleccion</Nombre>
-      <Sentencia>SELECT T.Almacen,T.Semana AS 'Semana del Año', T.Mes,T.Año, T.Gallinas, T.Muertes,
+      <Sentencia>SELECT T.Almacen,T.Semana AS 'Semana del Año', T.Año, T.Gallinas, 
+	(ISNULL(T.GDxG,0) + ISNULL(T.SPxG,0) + ISNULL(T.FxG,0)  + ISNULL(T.CAxG,0) + ISNULL(T.MPxG,0) + ISNULL(T.MVxG,0)) AS 'Costo por Gallina',
+	T.Muertes,
 	T.Muertes*(ISNULL(T.GDxG,0) + ISNULL(T.SPxG,0) + ISNULL(T.FxG,0)  + ISNULL(T.CAxG,0) + ISNULL(T.MPxG,0) + ISNULL(T.MVxG,0)) AS 'Perdida por Muerte',
-	T.Mortalidad AS '% Mortalidad', T.Postura AS '% Postura', T.KilosXCaja AS 'Kilos por Caja',
+	T.Mortalidad AS '% Mortalidad', T.Postura AS '% Postura',
+	(ISNULL(T.GD,0) + ISNULL(T.SP,0) + ISNULL(T.F,0)  + ISNULL(T.CA,0) + ISNULL(T.MP,0) + ISNULL(T.MV,0))/nullif(T.Postura,0) AS 'Costo por %Podtura',
+	T.Kilos, T.KilosXCaja AS 'Kilos por Caja',
 	T.F AS 'Alimento Consumido', T.ConvAlim AS 'Conversion Alimenticia', T.FxG AS 'Alimento por Gallina',
 	T.CA AS 'Complemto Alimenticio', T.CAxG AS 'Complemto Alimenticio por Gallina', 
 	T.MP AS 'Med Preventivo', T.MPxG AS 'Med Preventivo por Gallina',
@@ -16,8 +20,8 @@
 	T.GD AS 'Gastos Directos', T.GDxG AS 'Gastos Directos por Gallina',
 	T.SP AS 'Sueldos y Prestaciones',T.SPxG AS 'Sueldos y Pres por Gallinas'
 FROM -- Union de todo 
-	(SELECT RG.Almacen, RG.Semana,RG.Mes, RG.Año,
-	SUM(SUM(RG.Gallinas)) OVER(PARTITION BY RG.Almacen ORDER BY RG.Año, RG.Semana) AS Gallinas,
+	(SELECT RG.Almacen, RG.Semana, RG.Año,
+	SUM(SUM(RG.Gallinas)) OVER(PARTITION BY RG.Almacen ORDER BY RG.Año, RG.Semana) AS Gallinas, RG.Kilos,
 	NULLIF(RG.Cantidad,0)/NULLIF(SUM(SUM(RG.Gallinas)) OVER(PARTITION BY RG.Almacen ORDER BY RG.Año, RG.Semana),0) AS Postura,
 	NULLIF(RG.Kilos,0)/NULLIF(RG.Cajas,0) AS KilosXCaja	,
 	M.Cantidad AS Muertes, 
@@ -36,29 +40,26 @@ FROM -- Union de todo
 	MV.Costo/NULLIF(SUM(SUM(RG.Gallinas)) OVER(PARTITION BY RG.Almacen ORDER BY RG.Año, RG.Semana),0) AS MVxG
 		FROM -- Union recoleccion y gallinas 
 		(SELECT CASE WHEN Re.Almacen IS NULL THEN EG.idBodega ELSE Re.Almacen END AS Almacen,
-			CASE WHEN RE.Mes IS NULL THEN EG.Mes ELSE RE.Mes END AS Mes,
 			CASE WHEN Re.Semana IS NULL THEN EG.Semana ELSE Re.Semana END AS Semana,
 			CASE WHEN Re.Año IS NULL THEN EG.Año ELSE RE.Año END AS Año, 
 			Re.Kilos, Re.Cantidad, Re.Cajas,  
 			CASE WHEN EG.Gallinas IS NULL THEN 0 ELSE EG.Gallinas END AS Gallinas
 			FROM -- Recoleccion Huevo
-				(SELECT R.idBodegaOrigen AS Almacen, DATEPART(week,R.Fecha) AS Semana, 
-					DATEPART(MONTH,R.Fecha) AS MES,DATEPART(year,R.Fecha) AS Año,
+				(SELECT R.idBodegaOrigen AS Almacen, DATEPART(week,R.Fecha) AS Semana, DATEPART(year,R.Fecha) AS Año,
 					Sum(R.Cantidad) AS Cantidad,
 					Sum(R.NoCajas) AS Cajas, SUM(R.Peso) AS Kilos
 				FROM vol.gridTraspasosCorral R 
 				WHERE R.Descripcion LIKE 'Huevo%'
-				GROUP BY  R.idBodegaOrigen, DATEPART(week,R.Fecha), DATEPART(MONTH,R.Fecha), DATEPART(year,R.Fecha)) AS Re
+				GROUP BY  R.idBodegaOrigen, DATEPART(week,R.Fecha), DATEPART(year,R.Fecha)) AS Re
 			FULL OUTER JOIN -- Existencia Gallinas
-				(SELECT G.idBodega, DATEPART(week, G.Fecha) AS Semana, 
-				DATEPART(MONTH,G.Fecha) AS Mes, DATEPART(year, G.Fecha) AS Año, 
+				(SELECT G.idBodega, DATEPART(week, G.Fecha) AS Semana, DATEPART(year, G.Fecha) AS Año, 
 				SUM(G.Cantidad) AS Gallinas
 					FROM dbo.gridMovimientosInventario G
 					WHERE G.Codigo = '9006' AND G.idBodega LIKE 'A%'
-				GROUP BY G.idBodega,DATEPART(week,G.Fecha),DATEPART(MONTH,G.Fecha), DATEPART(year,G.Fecha)) AS EG
+				GROUP BY G.idBodega,DATEPART(week,G.Fecha),DATEPART(year,G.Fecha)) AS EG
 			ON Re.Almacen = EG.idBodega AND Re.Semana = EG. Semana AND Re.Año = EG.Año
 			GROUP BY Re.Almacen, Re.Semana, Re.Año, Re.Kilos, Re.Cantidad,
-			RE.Cajas, EG.Gallinas, EG.idBodega, EG.Semana, EG.Año,RE.Mes, EG.Mes) AS RG
+			RE.Cajas, EG.Gallinas, EG.idBodega, EG.Semana, EG.Año) AS RG
 	LEFT JOIN -- Medicamento Preventivo Veterinario
 		(SELECT mvp.idBodega AS Granja, 
 		DATEPART(week, MVP.Fecha) AS Semana, DATEPART(year, MVP.Fecha) AS Año,
@@ -117,11 +118,11 @@ FROM -- Union de todo
 				AND G.idBodega LIKE 'ASJP%'  
 		GROUP BY G.idBodega,DATEPART(WEEK,G.Fecha), DATEPART(YEAR,G.Fecha)) AS SP
 	ON RG.Almacen = SP.Granja AND RG.Semana = SP.semana AND RG.Año = SP.Año
-GROUP BY RG.Almacen, RG.Semana,RG.Mes, RG.Año, RG.Kilos,RG.Cantidad,RG.Cajas,MP.Costo,F.Costo,
+GROUP BY RG.Almacen, RG.Semana, RG.Año, RG.Kilos,RG.Cantidad,RG.Cajas,MP.Costo,F.Costo,
 			F.Kilos, MV.Costo, AC.Costo, M.Cantidad,GD.Costo,SP.Costo) AS T
-GROUP BY T.Almacen,T.Semana, T.Mes,T.Año, T.Gallinas, T.Muertes,
+GROUP BY T.Almacen,T.Semana,T.Año, T.Gallinas, T.Muertes,
 	T.Mortalidad, T.Postura, T.KilosXCaja,T.F, T.ConvAlim, T.FxG,
-	T.CA, T.CAxG, T.MP, T.MPxG, T.MV, T.MVxG, T.GD, T.GDxG, T.SP,T.SPxG
+	T.CA, T.CAxG, T.MP, T.MPxG, T.MV, T.MVxG, T.GD, T.GDxG, T.SP,T.SPxG,T.Kilos
 
 HAVING T.Semana &gt;= DATEPART(WEEK,@FechaInicio) AND T.Semana &lt;= DATEPART(WEEK,@FechaFinal)
 AND T.Año &gt;= DATEPART(YEAR,@FechaInicio) AND T.Año &lt;= DATEPART(YEAR,@FechaFinal)</Sentencia>
@@ -171,54 +172,24 @@ ORDER BY  V.Año DESC, V.Semana
 </Sentencia>
     </Tabla>
     <Tabla>
-      <HasChanges>true</HasChanges>
-      <id>4ca0c5fb-76cb-460f-b12e-ab321f4a4611</id>
+      <HasChanges>false</HasChanges>
+      <id>b220d27d-956c-433b-aedc-0978cc0bb15d</id>
       <idPadre>00000000-0000-0000-0000-000000000000</idPadre>
-      <Nombre>VE</Nombre>
-      <Sentencia>SELECT RG.Almacen, RG.Semana,RG.Mes, RG.Año, RG.Gallinas
-	FROM -- Union recoleccion y gallinas 
-(SELECT CASE WHEN Re.Almacen IS NULL THEN EG.idBodega ELSE Re.Almacen END AS Almacen,
-			CASE WHEN RE.Mes IS NULL THEN EG.Mes ELSE RE.Mes END AS Mes,
-			CASE WHEN Re.Semana IS NULL THEN EG.Semana ELSE Re.Semana END AS Semana,
-			CASE WHEN Re.Año IS NULL THEN EG.Año ELSE RE.Año END AS Año, 
-			Re.Kilos, Re.Cantidad, Re.Cajas,  
-			CASE WHEN EG.Gallinas IS NULL THEN 0 ELSE EG.Gallinas END AS Gallinas
-			FROM -- Recoleccion Huevo
-(SELECT R.idBodegaOrigen AS Almacen, DATEPART(week,R.Fecha) AS Semana, 
-DATEPART(MONTH,R.Fecha) AS MES,DATEPART(year,R.Fecha) AS Año,
-Sum(R.Cantidad) AS Cantidad,
-Sum(R.NoCajas) AS Cajas, SUM(R.Peso) AS Kilos
-				FROM vol.gridTraspasosCorral R 
-				WHERE R.Descripcion LIKE 'Huevo%'
-GROUP BY  R.idBodegaOrigen, DATEPART(week,R.Fecha), DATEPART(MONTH,R.Fecha), DATEPART(year,R.Fecha)) AS Re
-			FULL OUTER JOIN -- Existencia Gallinas
-(SELECT G.idBodega, DATEPART(week, G.Fecha) AS Semana, 
-DATEPART(MONTH,G.Fecha) AS Mes, DATEPART(year, G.Fecha) AS Año, 
-SUM(G.Cantidad) AS Gallinas
-					FROM dbo.gridMovimientosInventario G
-					WHERE G.Codigo = '9006' AND G.idBodega LIKE 'A%'
-GROUP BY G.idBodega,DATEPART(week,G.Fecha),DATEPART(MONTH,G.Fecha), DATEPART(year,G.Fecha)) AS EG
-			ON Re.Almacen = EG.idBodega AND Re.Semana = EG. Semana AND Re.Año = EG.Año
-			GROUP BY Re.Almacen, Re.Semana, Re.Año, Re.Kilos, Re.Cantidad,
-			RE.Cajas, EG.Gallinas, EG.idBodega, EG.Semana, EG.Año,RE.Mes, EG.Mes) AS RG
-GROUP BY RG.Almacen, RG.Semana,RG.Mes, RG.Año,  RG.Gallinas
-ORDER BY RG.Almacen, RG.Año, RG.Semana
-</Sentencia>
-    </Tabla>
-    <Tabla>
-      <HasChanges>true</HasChanges>
-      <id>0d9dacad-3ab2-4b9d-a8ed-4d49151a5b20</id>
-      <idPadre>00000000-0000-0000-0000-000000000000</idPadre>
-      <Nombre>GG</Nombre>
-      <Sentencia>SELECT G.idBodega, DATEPART(week, G.Fecha) AS Semana, 
-DATEPART(MONTH,G.Fecha) AS Mes, DATEPART(year, G.Fecha) AS Año, 
-SUM(SUM(G.Cantidad)) OVER(PARTITION BY G.idBodega ORDER BY DATEPART(year, G.Fecha), DATEPART(week, G.Fecha))  AS Gallinas
-					FROM dbo.gridMovimientosInventario G
-					WHERE G.Codigo = '9006' AND G.idBodega LIKE 'A%'
-GROUP BY G.idBodega,DATEPART(week,G.Fecha),DATEPART(MONTH,G.Fecha), DATEPART(year,G.Fecha)</Sentencia>
+      <Nombre>Pollitas</Nombre>
+      <Sentencia>SELECT G.idBodega, G.Fecha AS 'Fecha Inicio PosturA', G.Cantidad AS 'Gallinas Inicio Postura', G.Costo,
+	G.CostoUnitario AS 'Costo por Gallina'
+	 FROM dbo.gridMovimientosInventario AS G 
+WHERE G.TipoMovimiento = 'Entrada por Nacimiento' AND G.Codigo = '9006'
+AND G.Cantidad&gt;10</Sentencia>
     </Tabla>
   </Tablas>
-  <Outputs />
+  <Outputs>
+    <Output xsi:type="OutputDashboard">
+      <Tipo>Dashboard</Tipo>
+      <Nombre>DashBoard</Nombre>
+      <id>fa9a452f-030a-41c4-89d1-ca4f2c1d02a0</id>
+    </Output>
+  </Outputs>
   <Relaciones />
   <Parametros>
     <Parametro>
@@ -236,7 +207,7 @@ GROUP BY G.idBodega,DATEPART(week,G.Fecha),DATEPART(MONTH,G.Fecha), DATEPART(yea
       <Valor xsi:type="xsd:dateTime">2021-07-01T00:00:00</Valor>
       <Etiqueta>Al día:</Etiqueta>
       <Orden>2</Orden>
-      <HasChanges>true</HasChanges>
+      <HasChanges>false</HasChanges>
       <AskForValue>true</AskForValue>
     </Parametro>
   </Parametros>

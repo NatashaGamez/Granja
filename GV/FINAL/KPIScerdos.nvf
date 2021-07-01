@@ -94,8 +94,8 @@ GROUP BY V.idCapa, V.Cabezas, GD.Gasto, SP.Gasto, A.KilosConsumidos, A.Costo, MP
       <id>9fb5bff7-90fa-4ab0-802e-50814bd5a74d</id>
       <idPadre>00000000-0000-0000-0000-000000000000</idPadre>
       <Nombre>Cabezas Kilos Costo cerdos</Nombre>
-      <Sentencia>SELECT V.idCapa, V.Cabezas AS 'Cabezas Vendidas', E.Existencia AS 'Faltan Vender',
-	V.Duracion, V.PesoPromedio, V.PrecioxKilo, V.CostoxKilo
+      <Sentencia>SELECT V.idCapa,V.Duracion, V.Cabezas AS 'Cabezas Vendidas', E.Existencia AS 'Faltan Vender',
+	v.kilos, V.PesoPromedio, V.PrecioxKilo, V.Costo, V.CostoxKilo, V.CostoxCabeza
 FROM (SELECT M.idCapa, 
 		TRY_CAST(SUBSTRING(m.idCapa,8,2)+'/'+SUBSTRING(m.idCapa,10,2)+'/20'+SUBSTRING(m.idCapa,12,2)AS DATE) AS FechaDestete,
 		DATEPART(month,M.Fecha) AS Mes,
@@ -104,7 +104,9 @@ FROM (SELECT M.idCapa,
 		sum(CONVERT(FLOAT,m.Kilos)) AS Kilos,
 		 sum(CONVERT(FLOAT,m.Kilos))/NULLIF(SUM(M.Cantidad)*-1,0) AS PesoPromedio,
 		(Sum(M.Venta)*-1)/NULLIF(sum(CONVERT(FLOAT,m.Kilos)),0) AS PrecioxKilo, 
-		(Sum(m.Costo)*-1)/NULLIF(sum(CONVERT(FLOAT,m.Kilos)),0) AS CostoxKilo
+		(Sum(m.Costo)*-1)/NULLIF(sum(CONVERT(FLOAT,m.Kilos)),0) AS CostoxKilo,
+		SUM(M.Costo)*-1 AS Costo,
+		SUM(M.Costo)/SUM(M.Cantidad) AS CostoxCabeza
 	FROM dbo.gridMovimientosInventario AS M
 			WHERE (M.NombreLinea = 'Cerdos para venta' OR M.NombreLinea = 'Cerdos Cerdos Pie de Cría') 
 			AND (M.TipoMovimiento = 'Salida por facturación' OR M.TipoMovimiento = 'Cancelación')
@@ -142,10 +144,11 @@ FROM (SELECT M.idCapa,
 	GROUP BY E.idCapa) AS E
 	ON V.idCapa = E.idCapa
 GROUP BY V.idCapa, DE.Cabezas, V.Cabezas,E.Existencia,
-V.Duracion, V.PesoPromedio, V.PrecioxKilo, V.CostoxKilo, ME.Muertes</Sentencia>
+V.Duracion, V.PesoPromedio, V.PrecioxKilo, V.CostoxKilo, ME.Muertes, V.Costo,V.CostoxCabeza, v.kilos
+</Sentencia>
     </Tabla>
     <Tabla>
-      <HasChanges>true</HasChanges>
+      <HasChanges>false</HasChanges>
       <id>ffd2a9cf-cb85-4aff-a949-1c2930fd5178</id>
       <idPadre>00000000-0000-0000-0000-000000000000</idPadre>
       <Nombre>FuerzaLaborlaCapacidadGranja</Nombre>
@@ -177,7 +180,7 @@ GROUP BY SUBSTRING(C.idCapa,1,3)
 </Sentencia>
     </Tabla>
     <Tabla>
-      <HasChanges>true</HasChanges>
+      <HasChanges>false</HasChanges>
       <id>ff0f4b33-84af-49a0-9bd3-87a00a7204fa</id>
       <idPadre>00000000-0000-0000-0000-000000000000</idPadre>
       <Nombre>Muertes Cerdos EngordaDeste</Nombre>
@@ -234,7 +237,7 @@ ON V.idCapa = DE.Capa
 GROUP BY V.idCapa, V.Cabezas, DE.Cabezas, ME.Muertes, MD.Muertes</Sentencia>
     </Tabla>
     <Tabla>
-      <HasChanges>true</HasChanges>
+      <HasChanges>false</HasChanges>
       <id>f6a0194c-105f-4142-a026-5e313c889ec0</id>
       <idPadre>00000000-0000-0000-0000-000000000000</idPadre>
       <Nombre>Destete </Nombre>
@@ -337,7 +340,7 @@ GROUP BY V.idCapa, DE.Cabezas, DE.DuracionDestete, MP.Costo, MV.Costo, ATCA.Cost
 	A.KilosConsumidos, A.Costo, GD.Gasto, SP.Gasto</Sentencia>
     </Tabla>
     <Tabla>
-      <HasChanges>true</HasChanges>
+      <HasChanges>false</HasChanges>
       <id>a7cc34cd-839b-47c7-a84c-7376e030c49d</id>
       <idPadre>00000000-0000-0000-0000-000000000000</idPadre>
       <Nombre>PROD gastos, alim, med</Nombre>
@@ -441,13 +444,114 @@ GROUP BY V.idCapa, DE.Cabezas, MP.Costo, MV.Costo, ATCA.Costo,
 </Sentencia>
     </Tabla>
   </Tablas>
-  <Outputs />
+  <Outputs>
+    <Output xsi:type="OutputDashboard">
+      <Tipo>Dashboard</Tipo>
+      <Nombre>Prueba</Nombre>
+      <id>4c421b00-b6cc-4fbd-bf66-daf39d5f8bab</id>
+      <Layout>&lt;?xml version="1.0" encoding="utf-8"?&gt;
+&lt;Dashboard CurrencyCulture="es-MX"&gt;
+  &lt;Title Text="Tablero de control" /&gt;
+  &lt;DataSources&gt;
+    &lt;ObjectDataSource Name="Engorda Gastos, alim, med" ComponentName="dashboardObjectDataSource1"&gt;
+      &lt;DataSource Type="System.Data.DataTable, System.Data, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089" /&gt;
+    &lt;/ObjectDataSource&gt;
+    &lt;ObjectDataSource Name="Cabezas Kilos Costo cerdos" ComponentName="dashboardObjectDataSource2"&gt;
+      &lt;DataSource Type="System.Data.DataTable, System.Data, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089" /&gt;
+    &lt;/ObjectDataSource&gt;
+    &lt;ObjectDataSource Name="FuerzaLaborlaCapacidadGranja" ComponentName="dashboardObjectDataSource3"&gt;
+      &lt;DataSource Type="System.Data.DataTable, System.Data, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089" /&gt;
+    &lt;/ObjectDataSource&gt;
+    &lt;ObjectDataSource Name="Muertes Cerdos EngordaDeste" ComponentName="dashboardObjectDataSource4"&gt;
+      &lt;DataSource Type="System.Data.DataTable, System.Data, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089" /&gt;
+    &lt;/ObjectDataSource&gt;
+    &lt;ObjectDataSource Name="Destete " ComponentName="dashboardObjectDataSource5"&gt;
+      &lt;DataSource Type="System.Data.DataTable, System.Data, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089" /&gt;
+    &lt;/ObjectDataSource&gt;
+    &lt;ObjectDataSource Name="PROD gastos, alim, med" ComponentName="dashboardObjectDataSource6"&gt;
+      &lt;DataSource Type="System.Data.DataTable, System.Data, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089" /&gt;
+    &lt;/ObjectDataSource&gt;
+  &lt;/DataSources&gt;
+  &lt;Items&gt;
+    &lt;Pivot ComponentName="pivotDashboardItem1" Name="Cubo 1" DataSource="dashboardObjectDataSource6"&gt;
+      &lt;DataItems&gt;
+        &lt;Dimension DataMember="Capa" DefaultId="DataItem0" /&gt;
+        &lt;Measure DataMember="Alimento por cabeza" DefaultId="DataItem1" /&gt;
+        &lt;Measure DataMember="Cabezas" DefaultId="DataItem3" /&gt;
+        &lt;Measure DataMember="Alimento" DefaultId="DataItem2" /&gt;
+      &lt;/DataItems&gt;
+      &lt;Rows&gt;
+        &lt;Row DefaultId="DataItem0" /&gt;
+      &lt;/Rows&gt;
+      &lt;Values&gt;
+        &lt;Value DefaultId="DataItem3" /&gt;
+        &lt;Value DefaultId="DataItem1" /&gt;
+        &lt;Value DefaultId="DataItem2" /&gt;
+      &lt;/Values&gt;
+    &lt;/Pivot&gt;
+    &lt;Chart ComponentName="chartDashboardItem1" Name="Gráfico 1" DataSource="dashboardObjectDataSource6"&gt;
+      &lt;DataItems&gt;
+        &lt;Measure DataMember="Cabezas" DefaultId="DataItem0" /&gt;
+        &lt;Dimension DataMember="Capa" DefaultId="DataItem1" /&gt;
+      &lt;/DataItems&gt;
+      &lt;Arguments&gt;
+        &lt;Argument DefaultId="DataItem1" /&gt;
+      &lt;/Arguments&gt;
+      &lt;Panes&gt;
+        &lt;Pane Name="Panel 1"&gt;
+          &lt;Series&gt;
+            &lt;Simple&gt;
+              &lt;Value DefaultId="DataItem0" /&gt;
+            &lt;/Simple&gt;
+          &lt;/Series&gt;
+        &lt;/Pane&gt;
+      &lt;/Panes&gt;
+    &lt;/Chart&gt;
+    &lt;Card ComponentName="cardDashboardItem1" Name="Fichas 1" DataSource="dashboardObjectDataSource6"&gt;
+      &lt;DataItems&gt;
+        &lt;Measure DataMember="Costo por Cabeza" DefaultId="DataItem0"&gt;
+          &lt;NumericFormat FormatType="Number" Unit="Thousands" IncludeGroupSeparator="true" /&gt;
+        &lt;/Measure&gt;
+      &lt;/DataItems&gt;
+      &lt;Card&gt;
+        &lt;ActualValue DefaultId="DataItem0" /&gt;
+        &lt;AbsoluteVariationNumericFormat /&gt;
+        &lt;PercentVariationNumericFormat /&gt;
+        &lt;PercentOfTargetNumericFormat /&gt;
+        &lt;LayoutTemplate MinWidth="270" MaxWidth="270" Type="Centered"&gt;
+          &lt;MainValue Visible="true" ValueType="Title" DimensionIndex="0" /&gt;
+          &lt;SubValue Visible="true" ValueType="Subtitle" DimensionIndex="0" /&gt;
+          &lt;BottomValue Visible="true" ValueType="ActualValue" DimensionIndex="0" /&gt;
+          &lt;BottomSubValue1 Visible="true" ValueType="AbsoluteVariation" DimensionIndex="0" /&gt;
+          &lt;BottomSubValue2 Visible="true" ValueType="PercentVariation" DimensionIndex="0" /&gt;
+          &lt;DeltaIndicator Visible="true" /&gt;
+          &lt;Sparkline Visible="true" /&gt;
+        &lt;/LayoutTemplate&gt;
+      &lt;/Card&gt;
+    &lt;/Card&gt;
+    &lt;Card ComponentName="cardDashboardItem2" Name="Fichas 2" /&gt;
+  &lt;/Items&gt;
+  &lt;LayoutTree&gt;
+    &lt;LayoutGroup&gt;
+      &lt;LayoutGroup Orientation="Vertical" Weight="0.5"&gt;
+        &lt;LayoutItem DashboardItem="pivotDashboardItem1" Weight="0.5" /&gt;
+        &lt;LayoutItem DashboardItem="cardDashboardItem1" Weight="0.5" /&gt;
+      &lt;/LayoutGroup&gt;
+      &lt;LayoutGroup Orientation="Vertical" Weight="0.5"&gt;
+        &lt;LayoutItem DashboardItem="chartDashboardItem1" Weight="0.5" /&gt;
+        &lt;LayoutItem DashboardItem="cardDashboardItem2" Weight="0.5" /&gt;
+      &lt;/LayoutGroup&gt;
+    &lt;/LayoutGroup&gt;
+  &lt;/LayoutTree&gt;
+&lt;/Dashboard&gt;</Layout>
+    </Output>
+  </Outputs>
   <Relaciones />
   <Parametros>
     <Parametro>
       <Tipo>Fecha</Tipo>
       <Nombre>@FechaFinal</Nombre>
-      <Valor xsi:type="xsd:dateTime">2021-06-30T00:00:00</Valor>
+      <Valor xsi:type="xsd:dateTime">2021-07-01T00:00:00-05:00</Valor>
       <Etiqueta>Fecha Final</Etiqueta>
       <Orden>2</Orden>
       <HasChanges>true</HasChanges>
@@ -456,7 +560,7 @@ GROUP BY V.idCapa, DE.Cabezas, MP.Costo, MV.Costo, ATCA.Costo,
     <Parametro>
       <Tipo>Fecha</Tipo>
       <Nombre>@FechaInicio</Nombre>
-      <Valor xsi:type="xsd:dateTime">2021-06-01T00:00:00</Valor>
+      <Valor xsi:type="xsd:dateTime">2021-07-01T00:00:00-05:00</Valor>
       <Etiqueta>FechaInicio</Etiqueta>
       <Orden>3</Orden>
       <HasChanges>true</HasChanges>

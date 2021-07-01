@@ -364,43 +364,184 @@ FROM erp.ProductoExistencia C
 WHERE C.idProducto = '9000' AND C.idCapa LIKE 'GV%'
 GROUP BY SUBSTRING(C.idCapa,1,3)
 
+------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
----------------------------------HISTORIAL GALLINA--------------------------------------------------------------------------------------------------------------
+---------------------------------HISTORIAL GALLINA----------------------------------------------------------------------------------------------------------------
 
-SELECT YEY.idBodega, YEY.Fecha, SUM(SUM(YEY.qwert)) OVER(PARTITION BY YEY.idBodega ORDER BY YEY.Fecha)
-FROM (SELECT YA.idBodega, YA.Fecha,
-	CASE WHEN YA.FILA = MIN(YA.FIL) OVER(PARTITION BY YA.idBodega) THEN
-	YA.Bu ELSE YA.Cantidad END AS qwert
-FROM (SELECT A.FILA,A.idBodega, A.Fecha, A.Cantidad, B.B, 
-		CASE WHEN A.Cantidad>10000 THEN A.FILA END AS FIL,
-		A.Cantidad - CASE  A.TipoMovimiento WHEN 'Entrada por nacimiento' 
-		THEN B.B ELSE 0 END AS Bu
-	FROM (SELECT RANK() OVER (ORDER BY G.idBodega, G.Fecha) FILA,
-		G.idBodega,G.Fecha, G.Cantidad, G.TipoMovimiento,
-		SUM(SUM(G.Cantidad)) OVER(PARTITION BY G.idBodega ORDER BY G.Fecha) AS B
-		FROM dbo.gridMovimientosInventario g
-			WHERE (G.TipoMovimiento = 'Salida por muerte animal' OR G.TipoMovimiento = 'Entrada por nacimiento' )
-				AND G.Codigo = '9006'
-		GROUP BY G.idBodega,G.Cantidad,G.Fecha, G.TipoMovimiento) AS A
-		LEFT JOIN (SELECT RANK() OVER (ORDER BY G.idBodega, G.Fecha) FILA,
-		SUM(SUM(G.Cantidad)) OVER(PARTITION BY G.idBodega ORDER BY G.Fecha) AS B
-			FROM dbo.gridMovimientosInventario g
-		WHERE (G.TipoMovimiento = 'Salida por muerte animal' OR G.TipoMovimiento = 'Entrada por nacimiento' )
-					AND G.Codigo = '9006'
-			GROUP BY G.idBodega,G.Cantidad,G.Fecha, G.TipoMovimiento) AS B
-	ON A.FILA = B.FILA+1
-	GROUP BY A.FILA, A.idBodega, A.Fecha, A.Cantidad, B.B, A.TipoMovimiento) AS YA
-LEFT JOIN (SELECT G.idBodega,G.Fecha, G.Cantidad, G.TipoMovimiento
-	FROM dbo.gridMovimientosInventario g
-	WHERE (G.TipoMovimiento = 'Salida por muerte animal' OR G.TipoMovimiento = 'Entrada por nacimiento' )
-	AND G.Codigo = '9006'
-	GROUP BY G.idBodega,G.Cantidad,G.Fecha, G.TipoMovimiento) AS AA
-ON YA.Fecha = AA.Fecha
-	GROUP BY YA.idBodega, YA.Fecha, YA.FIL, YA.FILA, YA.Cantidad, Ya.Bu) AS YEY
-LEFT JOIN (SELECT G.idBodega,G.Fecha, G.Cantidad, G.TipoMovimiento
-	FROM dbo.gridMovimientosInventario g
-	WHERE (G.TipoMovimiento = 'Salida por muerte animal' OR G.TipoMovimiento = 'Entrada por nacimiento' )
-		AND G.Codigo = '9006'
-	GROUP BY G.idBodega,G.Cantidad,G.Fecha, G.TipoMovimiento) AS SS
-ON YEY.Fecha = SS.Fecha
-GROUP BY YEY.idBodega, YEY.Fecha
+
+SELECT G.idBodega, G.Fecha, G.Cantidad, 
+	SUM(SUM(G.Cantidad)) OVER(PARTITION BY G.idBodega ORDER BY G.Fecha)
+FROM dbo.gridMovimientosInventario G
+WHERE G.Codigo = '9006'
+GROUP BY G.idBodega, G.Fecha, G.Cantidad
+
+
+-------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+----------------- GALLINA RECOLECCION GASTOS MUERTE ---------------------------------------------------------------------------------------------------------------
+
+
+SELECT T.Almacen,T.Semana AS 'Semana del Año', T.Mes,T.Año, T.Gallinas, T.Muertes,
+	T.Muertes*(ISNULL(T.GDxG,0) + ISNULL(T.SPxG,0) + ISNULL(T.FxG,0)  + ISNULL(T.CAxG,0) + ISNULL(T.MPxG,0) + ISNULL(T.MVxG,0)) AS 'Perdida por Muerte',
+	T.Mortalidad AS '% Mortalidad', T.Postura AS '% Postura', T.KilosXCaja AS 'Kilos por Caja',
+	T.F AS 'Alimento Consumido', T.ConvAlim AS 'Conversion Alimenticia', T.FxG AS 'Alimento por Gallina',
+	T.CA AS 'Complemto Alimenticio', T.CAxG AS 'Complemto Alimenticio por Gallina', 
+	T.MP AS 'Med Preventivo', T.MPxG AS 'Med Preventivo por Gallina',
+	T.MV AS 'Material Veterianrio', T.MVxG AS 'Mat Vet por Gallina',
+	T.GD AS 'Gastos Directos', T.GDxG AS 'Gastos Directos por Gallina',
+	T.SP AS 'Sueldos y Prestaciones',T.SPxG AS 'Sueldos y Pres por Gallinas'
+FROM -- Union de todo 
+	(SELECT RG.Almacen, RG.Semana,RG.Mes, RG.Año,
+	SUM(SUM(RG.Gallinas)) OVER(PARTITION BY RG.Almacen ORDER BY RG.Año, RG.Semana) AS Gallinas,
+	NULLIF(RG.Cantidad,0)/NULLIF(SUM(SUM(RG.Gallinas)) OVER(PARTITION BY RG.Almacen ORDER BY RG.Año, RG.Semana),0) AS Postura,
+	NULLIF(RG.Kilos,0)/NULLIF(RG.Cajas,0) AS KilosXCaja	,
+	M.Cantidad AS Muertes, 
+	M.Cantidad/NULLIF(SUM(SUM(RG.Gallinas)) OVER(PARTITION BY RG.Almacen ORDER BY RG.Año, RG.Semana),0) AS Mortalidad,
+	F.Costo AS F, F.Kilos/NULLIF(RG.Kilos,0) AS ConvAlim,
+	F.Costo/NULLIF(SUM(SUM(RG.Gallinas)) OVER(PARTITION BY RG.Almacen ORDER BY RG.Año, RG.Semana),0) AS FxG,
+	GD.Costo AS GD, 
+	GD.Costo/NULLIF(SUM(SUM(RG.Gallinas)) OVER(PARTITION BY RG.Almacen ORDER BY RG.Año, RG.Semana),0) AS GDxG,
+	SP.Costo AS SP, 
+	SP.Costo/NULLIF(SUM(SUM(RG.Gallinas)) OVER(PARTITION BY RG.Almacen ORDER BY RG.Año, RG.Semana),0) AS SPxG,
+	AC.Costo AS CA, 
+	AC.Costo/NULLIF(SUM(SUM(RG.Gallinas)) OVER(PARTITION BY RG.Almacen ORDER BY RG.Año, RG.Semana),0) AS CAxG,
+	MP.Costo AS MP, 
+	MP.Costo/NULLIF(SUM(SUM(RG.Gallinas)) OVER(PARTITION BY RG.Almacen ORDER BY RG.Año, RG.Semana),0) AS MPxG,
+	MV.Costo AS MV, 
+	MV.Costo/NULLIF(SUM(SUM(RG.Gallinas)) OVER(PARTITION BY RG.Almacen ORDER BY RG.Año, RG.Semana),0) AS MVxG
+		FROM -- Union recoleccion y gallinas 
+		(SELECT CASE WHEN Re.Almacen IS NULL THEN EG.idBodega ELSE Re.Almacen END AS Almacen,
+			CASE WHEN RE.Mes IS NULL THEN EG.Mes ELSE RE.Mes END AS Mes,
+			CASE WHEN Re.Semana IS NULL THEN EG.Semana ELSE Re.Semana END AS Semana,
+			CASE WHEN Re.Año IS NULL THEN EG.Año ELSE RE.Año END AS Año, 
+			Re.Kilos, Re.Cantidad, Re.Cajas,  
+			CASE WHEN EG.Gallinas IS NULL THEN 0 ELSE EG.Gallinas END AS Gallinas
+			FROM -- Recoleccion Huevo
+				(SELECT R.idBodegaOrigen AS Almacen, DATEPART(week,R.Fecha) AS Semana, 
+					DATEPART(MONTH,R.Fecha) AS MES,DATEPART(year,R.Fecha) AS Año,
+					Sum(R.Cantidad) AS Cantidad,
+					Sum(R.NoCajas) AS Cajas, SUM(R.Peso) AS Kilos
+				FROM vol.gridTraspasosCorral R 
+				WHERE R.Descripcion LIKE 'Huevo%'
+				GROUP BY  R.idBodegaOrigen, DATEPART(week,R.Fecha), DATEPART(MONTH,R.Fecha), DATEPART(year,R.Fecha)) AS Re
+			FULL OUTER JOIN -- Existencia Gallinas
+				(SELECT G.idBodega, DATEPART(week, G.Fecha) AS Semana, 
+				DATEPART(MONTH,G.Fecha) AS Mes, DATEPART(year, G.Fecha) AS Año, 
+				SUM(G.Cantidad) AS Gallinas
+					FROM dbo.gridMovimientosInventario G
+					WHERE G.Codigo = '9006' AND G.idBodega LIKE 'A%'
+				GROUP BY G.idBodega,DATEPART(week,G.Fecha),DATEPART(MONTH,G.Fecha), DATEPART(year,G.Fecha)) AS EG
+			ON Re.Almacen = EG.idBodega AND Re.Semana = EG. Semana AND Re.Año = EG.Año
+			GROUP BY Re.Almacen, Re.Semana, Re.Año, Re.Kilos, Re.Cantidad,
+			RE.Cajas, EG.Gallinas, EG.idBodega, EG.Semana, EG.Año,RE.Mes, EG.Mes) AS RG
+	LEFT JOIN -- Medicamento Preventivo Veterinario
+		(SELECT mvp.idBodega AS Granja, 
+		DATEPART(week, MVP.Fecha) AS Semana, DATEPART(year, MVP.Fecha) AS Año,
+		SUM(MVP.Costo)*-1 AS Costo 
+			FROM dbo.gridMovimientosInventario MVP
+			WHERE MVP.TipoMovimiento = 'Salida por traspaso de corral' AND MVP.NombreLinea = 'Medicamento Preventivo Veterinario' 
+				AND mvp.idBodega LIKE 'ASJP%' AND mvp.EntradaSalida = 'S'
+		GROUP BY mvp.idBodega, DATEPART(week, MVP.Fecha), DATEPART(year, MVP.Fecha)) AS MP
+	ON RG.Almacen = MP.Granja AND RG.Semana = MP.semana AND RG.Año = MP.Año
+	LEFT JOIN --Formulaciones
+		(SELECT A.idBodega AS Almacen, DATEPART(WEEK,A.Fecha) AS Semana,
+		DATEPART(year,A.Fecha) AS Año, 
+		SUM(CASE A.Unidad WHEN 'TON' THEN A.Cantidad*-907.185 ELSE A.Cantidad*-1 END) AS Kilos,
+		SUM(A.Costo)*-1 AS Costo
+		FROM dbo.gridMovimientosInventario A
+		WHERE A.TipoMovimiento = 'Salida por traspaso de corral' 
+				AND A.NombreLinea = 'Formulaciones' AND A.idBodega LIKE 'AS%'
+		GROUP BY a.idBodega,DATEPART(WEEK,A.Fecha), DATEPART(year,A.Fecha)) AS F
+	ON RG.Almacen = F.Almacen AND RG.Semana = F.Semana AND RG.Año = F.Año
+	LEFT JOIN --Material Veterinario
+		(SELECT mvp.idBodega AS Granja, DATEPART(week, MVP.Fecha) AS Semana, DATEPART(year, MVP.Fecha) AS Año,
+		SUM(MVP.Costo)*-1 AS Costo 
+			FROM dbo.gridMovimientosInventario MVP
+			WHERE MVP.TipoMovimiento = 'Salida por traspaso de corral' AND MVP.NombreLinea = 'Material  Medico Veterinario'
+				AND mvp.idBodega LIKE 'ASJP%' AND mvp.EntradaSalida = 'S'
+		GROUP BY mvp.idBodega, mvp.Referencia, DATEPART(week, MVP.Fecha),DATEPART(year, MVP.Fecha)) AS MV
+	ON RG.Almacen = MV.Granja AND RG.Semana = MV.semana AND RG.Año = MV.Año
+	LEFT JOIN -- Alimento Terminado y Complementos Alimenticios
+		(SELECT mvp.idBodega AS Granja, DATEPART(week, MVP.Fecha) AS Semana, DATEPART(year, MVP.Fecha) AS Año,
+		SUM(MVP.Costo)*-1 AS Costo 
+			FROM dbo.gridMovimientosInventario MVP
+			WHERE MVP.TipoMovimiento = 'Salida por traspaso de corral' AND MVP.NombreLinea = 'Alimento Terminado y Complementos Alimenticios'
+				AND mvp.idBodega LIKE 'ASJP%' AND mvp.EntradaSalida = 'S'
+		GROUP BY mvp.idBodega, DATEPART(week, MVP.Fecha), DATEPART(year, MVP.Fecha)) AS AC
+	ON RG.Almacen = AC.Granja AND RG.Semana = AC.semana AND RG.Año = AC.Año
+	LEFT JOIN --Muertes
+		(SELECT  G.idBodega ,DATEPART(week,G.Fecha) AS Semana, DATEPART(year,G.Fecha) AS Año,
+		Sum(G.Cantidad)*-1 AS Cantidad
+		FROM dbo.gridMovimientosInventario G
+		WHERE g.Codigo = '9006' AND G.TipoMovimiento = 'Salida por muerte animal'
+		GROUP BY G.idBodega, DATEPART(week,G.Fecha), DATEPART(year,G.Fecha)) AS M
+	ON RG.Almacen = M.idBodega AND RG.Semana = M.Semana AND RG.Año = M.Año
+	LEFT JOIN -- Gastos Directos
+		(SELECT G.idBodega AS Granja,  DATEPART(WEEK,G.Fecha) AS Semana, DATEPART(YEAR,G.Fecha) AS Año,
+		SUM(G.Costo)*-1 AS Costo
+			FROM dbo.gridMovimientosInventario G
+			WHERE G.TipoMovimiento = 'Gasto en corral' AND g.NombreLinea = 'Gastos Directos' 
+				AND G.idBodega LIKE 'AS%'  
+		GROUP BY G.idBodega, DATEPART(WEEK,G.Fecha), DATEPART(YEAR,G.Fecha)) AS GD
+	ON RG.Almacen = GD.Granja AND RG.Semana = GD.semana AND RG.Año = GD.Año
+	LEFT JOIN --Sueldos y Prestaciones
+		(SELECT G.idBodega AS Granja, DATEPART(WEEK,G.Fecha) AS Semana, SUM(G.Costo)*-1 AS Costo, 
+			DATEPART(YEAR,G.Fecha) AS Año
+			FROM dbo.gridMovimientosInventario G
+			WHERE G.TipoMovimiento = 'Gasto en corral' AND g.NombreLinea = 'Sueldos y Prestaciones' 
+				AND G.idBodega LIKE 'ASJP%'  
+		GROUP BY G.idBodega,DATEPART(WEEK,G.Fecha), DATEPART(YEAR,G.Fecha)) AS SP
+	ON RG.Almacen = SP.Granja AND RG.Semana = SP.semana AND RG.Año = SP.Año
+GROUP BY RG.Almacen, RG.Semana,RG.Mes, RG.Año, RG.Kilos,RG.Cantidad,RG.Cajas,MP.Costo,F.Costo,
+			F.Kilos, MV.Costo, AC.Costo, M.Cantidad,GD.Costo,SP.Costo) AS T
+GROUP BY T.Almacen,T.Semana, T.Mes,T.Año, T.Gallinas, T.Muertes,
+	T.Mortalidad, T.Postura, T.KilosXCaja,T.F, T.ConvAlim, T.FxG,
+	T.CA, T.CAxG, T.MP, T.MPxG, T.MV, T.MVxG, T.GD, T.GDxG, T.SP,T.SPxG
+
+HAVING T.Semana >= DATEPART(WEEK,@FechaInicio) AND T.Semana <= DATEPART(WEEK,@FechaFinal)
+AND T.Año >= DATEPART(YEAR,@FechaInicio) AND T.Año <= DATEPART(YEAR,@FechaFinal)
+
+
+
+-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+------------------- VENTA HUEVO RECOLECCION ---------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+
+SELECT V.Semana, V.Año, V.Cajas, V.Kilos, V.Kilos/V.Cajas AS 'Peso Caja Vendida',
+	V.Venta, V.Costo, V.Venta/V.Kilos AS Precio,
+	 RE.KilosR, V.Kilos/RE.KilosR AS '%Kilos Rec Vendidos', 
+	V.Kilos/RE.KilosR*7 AS 'Dias Rec Vendidos',
+	E.Costo/NULLIF(V.Cajas,0) AS 'Cosot Empaque por Caja Vendidas'
+FROM -- Venta Huevo 
+	(SELECT datepart(week,F.Fecha) AS Semana, datepart(year,F.Fecha) AS Año,
+		SUM(Try_cast(F.Kilos AS FLOAT)) AS Cajas,
+		SUM(F.Cantidad)*-1 AS Kilos, SUM(F.Venta)*-1 AS Venta,
+		SUM(F.Costo)*-1 AS Costo 
+	FROM dbo.gridMovimientosInventario F
+	WHERE (F.TipoMovimiento = 'Salida por facturación' OR F.TipoMovimiento = 'Cancelación') 
+		AND F.NombreLinea = 'Huevo' AND F.Codigo = '9010'
+		GROUP BY datepart(week,F.Fecha), datepart(year,F.Fecha)) AS V
+	LEFT JOIN -- Recoleccion Huevo
+	( SELECT datepart(week,R.Fecha) AS Week, 
+		datepart(year,R.Fecha) AS Year, SUM(R.Peso) AS KilosR
+		FROM vol.gridTraspasosCorral R 
+		WHERE R.Descripcion LIKE 'Huevo%'
+		GROUP BY datepart(week,R.Fecha), datepart(year,R.Fecha)) AS RE
+		ON V.Semana = RE.Week AND V.Año = RE.Year
+	LEFT JOIN -- Empaque
+		(SELECT E.idBodega AS Almacen, Datepart(week,E.Fecha) AS Semana,
+		Datepart(year,E.Fecha) AS Año ,SUM(E.Costo) AS Costo 
+		FROM dbo.gridMovimientosInventario E
+		WHERE E.TipoMovimiento = 'Traspaso de almacén' 
+			AND E.NombreLinea = 'Empaques y embalajes'
+			AND E.EntradaSalida = 'E'
+			AND E.NombreCategoria = 'Aves'
+			AND E.idBodega LIKE 'AS%'
+		GROUP BY E.idBodega, Datepart(week,E.Fecha), Datepart(year,E.Fecha)) AS E
+	ON V.Semana = E.Semana AND V.Año = E.Año
+GROUP BY V.Semana, V.Año, V.Cajas, V.Kilos, V.Venta, V.Costo, RE.KilosR, E.Costo
+HAVING V.Semana >= DATEPART(WEEK,@FechaInicio) AND V.Semana <= DATEPART(WEEK,@FechaFinal)
+AND V.Año >= DATEPART(YEAR,@FechaInicio) AND V.Año <= DATEPART(YEAR,@FechaFinal)
+ORDER BY  V.Año DESC, V.Semana 
+

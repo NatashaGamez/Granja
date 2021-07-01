@@ -2,7 +2,7 @@
 <Vision xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema">
   <Tablas>
     <Tabla>
-      <HasChanges>true</HasChanges>
+      <HasChanges>false</HasChanges>
       <id>32d249c4-297e-428f-8217-c59b09f4e6ba</id>
       <idPadre>00000000-0000-0000-0000-000000000000</idPadre>
       <Nombre>Alimento consumido Engorda</Nombre>
@@ -17,7 +17,7 @@ WHERE M.TipoMovimiento = 'Salida por traspaso de corral' AND M.NombreLinea = 'Fo
 GROUP BY M.idBodega, M.Referencia</Sentencia>
     </Tabla>
     <Tabla>
-      <HasChanges>true</HasChanges>
+      <HasChanges>false</HasChanges>
       <id>9fb5bff7-90fa-4ab0-802e-50814bd5a74d</id>
       <idPadre>00000000-0000-0000-0000-000000000000</idPadre>
       <Nombre>Cabezas Kilos Costo cerdos</Nombre>
@@ -37,7 +37,7 @@ FROM dbo.gridMovimientosInventario AS M
 GROUP BY M.idBodega, M.idCapa</Sentencia>
     </Tabla>
     <Tabla>
-      <HasChanges>true</HasChanges>
+      <HasChanges>false</HasChanges>
       <id>9fbeee0b-8555-497b-a899-7c05b0922454</id>
       <idPadre>00000000-0000-0000-0000-000000000000</idPadre>
       <Nombre>Costo med prev cerdos</Nombre>
@@ -53,7 +53,7 @@ GROUP BY mvp.idBodega, mvp.Referencia
 </Sentencia>
     </Tabla>
     <Tabla>
-      <HasChanges>true</HasChanges>
+      <HasChanges>false</HasChanges>
       <id>fb371ca6-c3ab-4482-9c2c-5f8fb496d0f0</id>
       <idPadre>00000000-0000-0000-0000-000000000000</idPadre>
       <Nombre>Costo material veterinario cerdos</Nombre>
@@ -78,7 +78,7 @@ GROUP BY mvp.idBodega, mvp.Referencia
 </Sentencia>
     </Tabla>
     <Tabla>
-      <HasChanges>true</HasChanges>
+      <HasChanges>false</HasChanges>
       <id>5182d1a7-bbeb-4dbb-8ce4-0ead5be5e5f1</id>
       <idPadre>00000000-0000-0000-0000-000000000000</idPadre>
       <Nombre>Costo alimento terminado y complemento alimenticios cerdos</Nombre>
@@ -94,7 +94,7 @@ GROUP BY mvp.idBodega, mvp.Referencia
 </Sentencia>
     </Tabla>
     <Tabla>
-      <HasChanges>true</HasChanges>
+      <HasChanges>false</HasChanges>
       <id>599ac9e3-309d-4106-abe1-2fa49f6cf217</id>
       <idPadre>00000000-0000-0000-0000-000000000000</idPadre>
       <Nombre>Gastos Directos cerdos</Nombre>
@@ -143,7 +143,7 @@ GROUP BY SUBSTRING(F.idBodega,1,3)
 </Sentencia>
     </Tabla>
     <Tabla>
-      <HasChanges>true</HasChanges>
+      <HasChanges>false</HasChanges>
       <id>ff0f4b33-84af-49a0-9bd3-87a00a7204fa</id>
       <idPadre>00000000-0000-0000-0000-000000000000</idPadre>
       <Nombre>Muertes Cerdos Engorda</Nombre>
@@ -163,7 +163,7 @@ GROUP BY SUBSTRING(F.idBodega,1,3)
 	GROUP BY M.idBodega, M.idCapa</Sentencia>
     </Tabla>
     <Tabla>
-      <HasChanges>true</HasChanges>
+      <HasChanges>false</HasChanges>
       <id>af3d1466-bbc7-4cb3-b3fa-bddc6910aee6</id>
       <idPadre>00000000-0000-0000-0000-000000000000</idPadre>
       <Nombre>DesteteEngorda</Nombre>
@@ -206,7 +206,7 @@ AND LEN(D.idCapa)=13
 GROUP BY D.idBodega, D.idCapa</Sentencia>
     </Tabla>
     <Tabla>
-      <HasChanges>true</HasChanges>
+      <HasChanges>false</HasChanges>
       <id>f98bc34c-6a76-4652-b646-9c4a416b6557</id>
       <idPadre>00000000-0000-0000-0000-000000000000</idPadre>
       <Nombre>Sueldos y prestaciones cerdos</Nombre>
@@ -221,7 +221,7 @@ GROUP BY G.idBodega, G.Referencia
 -- Datos bien</Sentencia>
     </Tabla>
     <Tabla>
-      <HasChanges>true</HasChanges>
+      <HasChanges>false</HasChanges>
       <id>13ca003e-4256-4e8f-a6c2-dec3c9cd4e4c</id>
       <idPadre>00000000-0000-0000-0000-000000000000</idPadre>
       <Nombre>ManoObraPROD</Nombre>
@@ -244,7 +244,7 @@ GROUP BY G.idBodega, G.Referencia
 	-- Datos bien</Sentencia>
     </Tabla>
     <Tabla>
-      <HasChanges>true</HasChanges>
+      <HasChanges>false</HasChanges>
       <id>a7cc34cd-839b-47c7-a84c-7376e030c49d</id>
       <idPadre>00000000-0000-0000-0000-000000000000</idPadre>
       <Nombre>Med Prev PROD</Nombre>
@@ -259,7 +259,7 @@ GROUP BY G.idBodega, G.Referencia
 	GROUP BY mvp.idBodega, mvp.Referencia</Sentencia>
     </Tabla>
     <Tabla>
-      <HasChanges>true</HasChanges>
+      <HasChanges>false</HasChanges>
       <id>5db634d2-c6fe-4674-9332-a9f9475f7847</id>
       <idPadre>00000000-0000-0000-0000-000000000000</idPadre>
       <Nombre>MaterialVet PROD</Nombre>
@@ -282,7 +282,7 @@ WHERE MVP.TipoMovimiento = 'Salida por traspaso de corral'
 GROUP BY mvp.idBodega, mvp.Referencia</Sentencia>
     </Tabla>
     <Tabla>
-      <HasChanges>true</HasChanges>
+      <HasChanges>false</HasChanges>
       <id>50ba2c23-09d6-401e-8652-b9680a4021a6</id>
       <idPadre>00000000-0000-0000-0000-000000000000</idPadre>
       <Nombre>AlimentoTerminadoComplementos PROD</Nombre>
@@ -305,7 +305,7 @@ WHERE MVP.TipoMovimiento = 'Salida por traspaso de corral'
 GROUP BY mvp.idBodega, mvp.Referencia</Sentencia>
     </Tabla>
     <Tabla>
-      <HasChanges>true</HasChanges>
+      <HasChanges>false</HasChanges>
       <id>8eb3a689-3a0a-4ed1-ba08-ceea88eb972f</id>
       <idPadre>00000000-0000-0000-0000-000000000000</idPadre>
       <Nombre>FormulasPROD</Nombre>
@@ -319,7 +319,144 @@ WHERE M.TipoMovimiento = 'Salida por traspaso de corral' AND M.NombreLinea = 'Fo
 GROUP BY M.idBodega, M.Referencia</Sentencia>
     </Tabla>
   </Tablas>
-  <Outputs />
+  <Outputs>
+    <Output xsi:type="OutputReporte">
+      <Tipo>Reporte</Tipo>
+      <Nombre>PRUEBA</Nombre>
+      <id>19cf4875-3a4f-4db2-8468-bf6963958c48</id>
+    </Output>
+    <Output xsi:type="OutputDashboard">
+      <Tipo>Dashboard</Tipo>
+      <Nombre>PRUEBA 1</Nombre>
+      <id>4047b4ee-528e-4673-af51-ae37b6636efc</id>
+      <Layout>&lt;?xml version="1.0" encoding="utf-8"?&gt;
+&lt;Dashboard CurrencyCulture="es-MX"&gt;
+  &lt;Title Text="CERDOS" /&gt;
+  &lt;DataSources&gt;
+    &lt;ObjectDataSource Name="Alimento consumido Engorda" ComponentName="dashboardObjectDataSource1"&gt;
+      &lt;DataSource Type="System.Data.DataTable, System.Data, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089" /&gt;
+    &lt;/ObjectDataSource&gt;
+    &lt;ObjectDataSource Name="Cabezas Kilos Costo cerdos" ComponentName="dashboardObjectDataSource2"&gt;
+      &lt;DataSource Type="System.Data.DataTable, System.Data, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089" /&gt;
+    &lt;/ObjectDataSource&gt;
+    &lt;ObjectDataSource Name="Costo med prev cerdos" ComponentName="dashboardObjectDataSource3"&gt;
+      &lt;DataSource Type="System.Data.DataTable, System.Data, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089" /&gt;
+    &lt;/ObjectDataSource&gt;
+    &lt;ObjectDataSource Name="Costo material veterinario cerdos" ComponentName="dashboardObjectDataSource4"&gt;
+      &lt;DataSource Type="System.Data.DataTable, System.Data, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089" /&gt;
+    &lt;/ObjectDataSource&gt;
+    &lt;ObjectDataSource Name="Costo alimento terminado y complemento alimenticios cerdos" ComponentName="dashboardObjectDataSource5"&gt;
+      &lt;DataSource Type="System.Data.DataTable, System.Data, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089" /&gt;
+    &lt;/ObjectDataSource&gt;
+    &lt;ObjectDataSource Name="Gastos Directos cerdos" ComponentName="dashboardObjectDataSource6"&gt;
+      &lt;DataSource Type="System.Data.DataTable, System.Data, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089" /&gt;
+    &lt;/ObjectDataSource&gt;
+    &lt;ObjectDataSource Name="FuerzaLaborlaCapacidadGranja" ComponentName="dashboardObjectDataSource7"&gt;
+      &lt;DataSource Type="System.Data.DataTable, System.Data, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089" /&gt;
+    &lt;/ObjectDataSource&gt;
+    &lt;ObjectDataSource Name="Muertes Cerdos Engorda" ComponentName="dashboardObjectDataSource8"&gt;
+      &lt;DataSource Type="System.Data.DataTable, System.Data, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089" /&gt;
+    &lt;/ObjectDataSource&gt;
+    &lt;ObjectDataSource Name="DesteteEngorda" ComponentName="dashboardObjectDataSource9"&gt;
+      &lt;DataSource Type="System.Data.DataTable, System.Data, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089" /&gt;
+    &lt;/ObjectDataSource&gt;
+    &lt;ObjectDataSource Name="Engorda" ComponentName="dashboardObjectDataSource10"&gt;
+      &lt;DataSource Type="System.Data.DataTable, System.Data, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089" /&gt;
+    &lt;/ObjectDataSource&gt;
+    &lt;ObjectDataSource Name="Sueldos y prestaciones cerdos" ComponentName="dashboardObjectDataSource11"&gt;
+      &lt;DataSource Type="System.Data.DataTable, System.Data, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089" /&gt;
+    &lt;/ObjectDataSource&gt;
+    &lt;ObjectDataSource Name="ManoObraPROD" ComponentName="dashboardObjectDataSource12"&gt;
+      &lt;DataSource Type="System.Data.DataTable, System.Data, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089" /&gt;
+    &lt;/ObjectDataSource&gt;
+    &lt;ObjectDataSource Name="Med Prev PROD" ComponentName="dashboardObjectDataSource13"&gt;
+      &lt;DataSource Type="System.Data.DataTable, System.Data, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089" /&gt;
+    &lt;/ObjectDataSource&gt;
+    &lt;ObjectDataSource Name="MaterialVet PROD" ComponentName="dashboardObjectDataSource14"&gt;
+      &lt;DataSource Type="System.Data.DataTable, System.Data, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089" /&gt;
+    &lt;/ObjectDataSource&gt;
+    &lt;ObjectDataSource Name="AlimentoTerminadoComplementos PROD" ComponentName="dashboardObjectDataSource15"&gt;
+      &lt;DataSource Type="System.Data.DataTable, System.Data, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089" /&gt;
+    &lt;/ObjectDataSource&gt;
+    &lt;ObjectDataSource Name="FormulasPROD" ComponentName="dashboardObjectDataSource16"&gt;
+      &lt;DataSource Type="System.Data.DataTable, System.Data, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089" /&gt;
+    &lt;/ObjectDataSource&gt;
+  &lt;/DataSources&gt;
+  &lt;Items&gt;
+    &lt;Pivot ComponentName="pivotDashboardItem1" Name="Formulas PROD" DataSource="dashboardObjectDataSource16"&gt;
+      &lt;DataItems&gt;
+        &lt;Dimension DataMember="KilosConsumidos" SortOrder="Descending" DefaultId="DataItem2" /&gt;
+        &lt;Dimension DataMember="idBodega" DefaultId="DataItem1" /&gt;
+        &lt;Dimension DataMember="Costo" SortOrder="Descending" DefaultId="DataItem3" /&gt;
+        &lt;Measure DataMember="Capa" SummaryType="Count" DefaultId="DataItem0" /&gt;
+      &lt;/DataItems&gt;
+      &lt;Columns&gt;
+        &lt;Column DefaultId="DataItem1" /&gt;
+        &lt;Column DefaultId="DataItem3" /&gt;
+      &lt;/Columns&gt;
+      &lt;Rows&gt;
+        &lt;Row DefaultId="DataItem2" /&gt;
+      &lt;/Rows&gt;
+      &lt;Values&gt;
+        &lt;Value DefaultId="DataItem0" /&gt;
+      &lt;/Values&gt;
+    &lt;/Pivot&gt;
+    &lt;Pivot ComponentName="pivotDashboardItem2" Name="Alimento terminado" DataSource="dashboardObjectDataSource15"&gt;
+      &lt;DataItems&gt;
+        &lt;Dimension DataMember="Capa" DefaultId="DataItem1" /&gt;
+        &lt;Dimension DataMember="fechafinal" DefaultId="DataItem2" /&gt;
+        &lt;Dimension DataMember="fechaincial" DefaultId="DataItem3" /&gt;
+        &lt;Measure DataMember="Costo" DefaultId="DataItem4" /&gt;
+        &lt;Measure DataMember="Granja" SummaryType="Count" DefaultId="DataItem0" /&gt;
+      &lt;/DataItems&gt;
+      &lt;Columns&gt;
+        &lt;Column DefaultId="DataItem2" /&gt;
+        &lt;Column DefaultId="DataItem3" /&gt;
+      &lt;/Columns&gt;
+      &lt;Rows&gt;
+        &lt;Row DefaultId="DataItem1" /&gt;
+      &lt;/Rows&gt;
+      &lt;Values&gt;
+        &lt;Value DefaultId="DataItem4" /&gt;
+        &lt;Value DefaultId="DataItem0" /&gt;
+      &lt;/Values&gt;
+    &lt;/Pivot&gt;
+    &lt;Pivot ComponentName="pivotDashboardItem3" Name="Alimento" DataSource="dashboardObjectDataSource15"&gt;
+      &lt;DataItems&gt;
+        &lt;Dimension DataMember="Granja" DefaultId="DataItem0" /&gt;
+        &lt;Measure DataMember="fechafinal" SummaryType="Count" DefaultId="DataItem1" /&gt;
+        &lt;Measure DataMember="Capa" SummaryType="Count" DefaultId="DataItem2" /&gt;
+        &lt;Dimension DataMember="Granja" DefaultId="DataItem4" /&gt;
+        &lt;Dimension DataMember="Costo" DefaultId="DataItem3" /&gt;
+      &lt;/DataItems&gt;
+      &lt;HiddenDimensions&gt;
+        &lt;Dimension DefaultId="DataItem0" /&gt;
+      &lt;/HiddenDimensions&gt;
+      &lt;Columns&gt;
+        &lt;Column DefaultId="DataItem3" /&gt;
+      &lt;/Columns&gt;
+      &lt;Rows&gt;
+        &lt;Row DefaultId="DataItem4" /&gt;
+      &lt;/Rows&gt;
+      &lt;Values&gt;
+        &lt;Value DefaultId="DataItem1" /&gt;
+        &lt;Value DefaultId="DataItem2" /&gt;
+      &lt;/Values&gt;
+      &lt;ValuesPosition&gt;Rows&lt;/ValuesPosition&gt;
+    &lt;/Pivot&gt;
+  &lt;/Items&gt;
+  &lt;LayoutTree&gt;
+    &lt;LayoutGroup&gt;
+      &lt;LayoutGroup Orientation="Vertical" Weight="0.5"&gt;
+        &lt;LayoutItem DashboardItem="pivotDashboardItem1" Weight="0.5" /&gt;
+        &lt;LayoutItem DashboardItem="pivotDashboardItem3" Weight="0.5" /&gt;
+      &lt;/LayoutGroup&gt;
+      &lt;LayoutItem DashboardItem="pivotDashboardItem2" Weight="0.5" /&gt;
+    &lt;/LayoutGroup&gt;
+  &lt;/LayoutTree&gt;
+&lt;/Dashboard&gt;</Layout>
+    </Output>
+  </Outputs>
   <Relaciones />
   <Parametros />
   <ParametrosFormDesign>
@@ -334,6 +471,6 @@ GROUP BY M.idBodega, M.Referencia</Sentencia>
   <ConfiguracionCorreo>
     <Correos />
   </ConfiguracionCorreo>
-  <FileName>C:\Users\Natasha GO\Documents\KPIScerdos.nvf</FileName>
+  <FileName>C:\Users\liype\Documents\GranjaVolantin\Granja\GV\FINAL\KPIScerdos.nvf</FileName>
   <FileReadOnly>false</FileReadOnly>
 </Vision>

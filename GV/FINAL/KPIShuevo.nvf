@@ -65,6 +65,7 @@ GROUP BY mvp.idBodega, mvp.Referencia, DATEPART(year, MVP.Fecha)</Sentencia>
       <id>7ced055c-2d47-4eaa-9b41-6bf7a732593b</id>
       <idPadre>00000000-0000-0000-0000-000000000000</idPadre>
       <Nombre>Recolleccion</Nombre>
+<<<<<<< HEAD
       <Sentencia>SELECT --R.idBodegaOrigen AS Almacen, 
 	DATEPART(week,R.Fecha) AS Semana,DATEPART(year,R.Fecha) AS Año,
 	Sum(R.Cantidad) AS Cantidad,
@@ -135,6 +136,128 @@ WHERE E.TipoMovimiento = 'Traspaso de almacén'
 	AND E.NombreCategoria = 'Aves'
 	AND E.idBodega LIKE 'AS%'
 GROUP BY E.idBodega, Datepart(week,E.Fecha), Datepart(year,E.Fecha)</Sentencia>
+=======
+      <Sentencia>SELECT T.Almacen,T.Semana AS 'Semana del Año', T.Año, T.Gallinas, 
+	(ISNULL(T.GDxG,0) + ISNULL(T.SPxG,0) + ISNULL(T.FxG,0)  + ISNULL(T.CAxG,0) + ISNULL(T.MPxG,0) + ISNULL(T.MVxG,0)) AS 'Costo por Gallina',
+	T.Muertes,
+	T.Muertes*(ISNULL(T.GDxG,0) + ISNULL(T.SPxG,0) + ISNULL(T.FxG,0)  + ISNULL(T.CAxG,0) + ISNULL(T.MPxG,0) + ISNULL(T.MVxG,0)) AS 'Perdida por Muerte',
+	T.Mortalidad AS '% Mortalidad', T.Postura AS '% Postura',
+	(ISNULL(T.GD,0) + ISNULL(T.SP,0) + ISNULL(T.F,0)  + ISNULL(T.CA,0) + ISNULL(T.MP,0) + ISNULL(T.MV,0))/nullif(T.Postura,0) AS 'Costo por %Podtura',
+	T.Kilos, T.KilosXCaja AS 'Kilos por Caja',
+	T.F AS 'Alimento Consumido', T.ConvAlim AS 'Conversion Alimenticia', T.FxG AS 'Alimento por Gallina',
+	T.CA AS 'Complemto Alimenticio', T.CAxG AS 'Complemto Alimenticio por Gallina', 
+	T.MP AS 'Med Preventivo', T.MPxG AS 'Med Preventivo por Gallina',
+	T.MV AS 'Material Veterianrio', T.MVxG AS 'Mat Vet por Gallina',
+	T.GD AS 'Gastos Directos', T.GDxG AS 'Gastos Directos por Gallina',
+	T.SP AS 'Sueldos y Prestaciones',T.SPxG AS 'Sueldos y Pres por Gallinas'
+FROM -- Union de todo 
+	(SELECT RG.Almacen, RG.Semana, RG.Año,
+	SUM(SUM(RG.Gallinas)) OVER(PARTITION BY RG.Almacen ORDER BY RG.Año, RG.Semana) AS Gallinas, RG.Kilos,
+	NULLIF(RG.Cantidad,0)/NULLIF(SUM(SUM(RG.Gallinas)) OVER(PARTITION BY RG.Almacen ORDER BY RG.Año, RG.Semana),0) AS Postura,
+	NULLIF(RG.Kilos,0)/NULLIF(RG.Cajas,0) AS KilosXCaja	,
+	M.Cantidad AS Muertes, 
+	M.Cantidad/NULLIF(SUM(SUM(RG.Gallinas)) OVER(PARTITION BY RG.Almacen ORDER BY RG.Año, RG.Semana),0) AS Mortalidad,
+	F.Costo AS F, F.Kilos/NULLIF(RG.Kilos,0) AS ConvAlim,
+	F.Costo/NULLIF(SUM(SUM(RG.Gallinas)) OVER(PARTITION BY RG.Almacen ORDER BY RG.Año, RG.Semana),0) AS FxG,
+	GD.Costo AS GD, 
+	GD.Costo/NULLIF(SUM(SUM(RG.Gallinas)) OVER(PARTITION BY RG.Almacen ORDER BY RG.Año, RG.Semana),0) AS GDxG,
+	SP.Costo AS SP, 
+	SP.Costo/NULLIF(SUM(SUM(RG.Gallinas)) OVER(PARTITION BY RG.Almacen ORDER BY RG.Año, RG.Semana),0) AS SPxG,
+	AC.Costo AS CA, 
+	AC.Costo/NULLIF(SUM(SUM(RG.Gallinas)) OVER(PARTITION BY RG.Almacen ORDER BY RG.Año, RG.Semana),0) AS CAxG,
+	MP.Costo AS MP, 
+	MP.Costo/NULLIF(SUM(SUM(RG.Gallinas)) OVER(PARTITION BY RG.Almacen ORDER BY RG.Año, RG.Semana),0) AS MPxG,
+	MV.Costo AS MV, 
+	MV.Costo/NULLIF(SUM(SUM(RG.Gallinas)) OVER(PARTITION BY RG.Almacen ORDER BY RG.Año, RG.Semana),0) AS MVxG
+		FROM -- Union recoleccion y gallinas 
+		(SELECT CASE WHEN Re.Almacen IS NULL THEN EG.idBodega ELSE Re.Almacen END AS Almacen,
+			CASE WHEN Re.Semana IS NULL THEN EG.Semana ELSE Re.Semana END AS Semana,
+			CASE WHEN Re.Año IS NULL THEN EG.Año ELSE RE.Año END AS Año, 
+			Re.Kilos, Re.Cantidad, Re.Cajas,  
+			CASE WHEN EG.Gallinas IS NULL THEN 0 ELSE EG.Gallinas END AS Gallinas
+			FROM -- Recoleccion Huevo
+				(SELECT R.idBodegaOrigen AS Almacen, DATEPART(week,R.Fecha) AS Semana, DATEPART(year,R.Fecha) AS Año,
+					Sum(R.Cantidad) AS Cantidad,
+					Sum(R.NoCajas) AS Cajas, SUM(R.Peso) AS Kilos
+				FROM vol.gridTraspasosCorral R 
+				WHERE R.Descripcion LIKE 'Huevo%'
+				GROUP BY  R.idBodegaOrigen, DATEPART(week,R.Fecha), DATEPART(year,R.Fecha)) AS Re
+			FULL OUTER JOIN -- Existencia Gallinas
+				(SELECT G.idBodega, DATEPART(week, G.Fecha) AS Semana, DATEPART(year, G.Fecha) AS Año, 
+				SUM(G.Cantidad) AS Gallinas
+					FROM dbo.gridMovimientosInventario G
+					WHERE G.Codigo = '9006' AND G.idBodega LIKE 'A%'
+				GROUP BY G.idBodega,DATEPART(week,G.Fecha),DATEPART(year,G.Fecha)) AS EG
+			ON Re.Almacen = EG.idBodega AND Re.Semana = EG. Semana AND Re.Año = EG.Año
+			GROUP BY Re.Almacen, Re.Semana, Re.Año, Re.Kilos, Re.Cantidad,
+			RE.Cajas, EG.Gallinas, EG.idBodega, EG.Semana, EG.Año) AS RG
+	LEFT JOIN -- Medicamento Preventivo Veterinario
+		(SELECT mvp.idBodega AS Granja, 
+		DATEPART(week, MVP.Fecha) AS Semana, DATEPART(year, MVP.Fecha) AS Año,
+		SUM(MVP.Costo)*-1 AS Costo 
+			FROM dbo.gridMovimientosInventario MVP
+			WHERE MVP.TipoMovimiento = 'Salida por traspaso de corral' AND MVP.NombreLinea = 'Medicamento Preventivo Veterinario' 
+				AND mvp.idBodega LIKE 'ASJP%' AND mvp.EntradaSalida = 'S'
+		GROUP BY mvp.idBodega, DATEPART(week, MVP.Fecha), DATEPART(year, MVP.Fecha)) AS MP
+	ON RG.Almacen = MP.Granja AND RG.Semana = MP.semana AND RG.Año = MP.Año
+	LEFT JOIN --Formulaciones
+		(SELECT A.idBodega AS Almacen, DATEPART(WEEK,A.Fecha) AS Semana,
+		DATEPART(year,A.Fecha) AS Año, 
+		SUM(CASE A.Unidad WHEN 'TON' THEN A.Cantidad*-907.185 ELSE A.Cantidad*-1 END) AS Kilos,
+		SUM(A.Costo)*-1 AS Costo
+		FROM dbo.gridMovimientosInventario A
+		WHERE A.TipoMovimiento = 'Salida por traspaso de corral' 
+				AND A.NombreLinea = 'Formulaciones' AND A.idBodega LIKE 'AS%'
+		GROUP BY a.idBodega,DATEPART(WEEK,A.Fecha), DATEPART(year,A.Fecha)) AS F
+	ON RG.Almacen = F.Almacen AND RG.Semana = F.Semana AND RG.Año = F.Año
+	LEFT JOIN --Material Veterinario
+		(SELECT mvp.idBodega AS Granja, DATEPART(week, MVP.Fecha) AS Semana, DATEPART(year, MVP.Fecha) AS Año,
+		SUM(MVP.Costo)*-1 AS Costo 
+			FROM dbo.gridMovimientosInventario MVP
+			WHERE MVP.TipoMovimiento = 'Salida por traspaso de corral' AND MVP.NombreLinea = 'Material  Medico Veterinario'
+				AND mvp.idBodega LIKE 'ASJP%' AND mvp.EntradaSalida = 'S'
+		GROUP BY mvp.idBodega, mvp.Referencia, DATEPART(week, MVP.Fecha),DATEPART(year, MVP.Fecha)) AS MV
+	ON RG.Almacen = MV.Granja AND RG.Semana = MV.semana AND RG.Año = MV.Año
+	LEFT JOIN -- Alimento Terminado y Complementos Alimenticios
+		(SELECT mvp.idBodega AS Granja, DATEPART(week, MVP.Fecha) AS Semana, DATEPART(year, MVP.Fecha) AS Año,
+		SUM(MVP.Costo)*-1 AS Costo 
+			FROM dbo.gridMovimientosInventario MVP
+			WHERE MVP.TipoMovimiento = 'Salida por traspaso de corral' AND MVP.NombreLinea = 'Alimento Terminado y Complementos Alimenticios'
+				AND mvp.idBodega LIKE 'ASJP%' AND mvp.EntradaSalida = 'S'
+		GROUP BY mvp.idBodega, DATEPART(week, MVP.Fecha), DATEPART(year, MVP.Fecha)) AS AC
+	ON RG.Almacen = AC.Granja AND RG.Semana = AC.semana AND RG.Año = AC.Año
+	LEFT JOIN --Muertes
+		(SELECT  G.idBodega ,DATEPART(week,G.Fecha) AS Semana, DATEPART(year,G.Fecha) AS Año,
+		Sum(G.Cantidad)*-1 AS Cantidad
+		FROM dbo.gridMovimientosInventario G
+		WHERE g.Codigo = '9006' AND G.TipoMovimiento = 'Salida por muerte animal'
+		GROUP BY G.idBodega, DATEPART(week,G.Fecha), DATEPART(year,G.Fecha)) AS M
+	ON RG.Almacen = M.idBodega AND RG.Semana = M.Semana AND RG.Año = M.Año
+	LEFT JOIN -- Gastos Directos
+		(SELECT G.idBodega AS Granja,  DATEPART(WEEK,G.Fecha) AS Semana, DATEPART(YEAR,G.Fecha) AS Año,
+		SUM(G.Costo)*-1 AS Costo
+			FROM dbo.gridMovimientosInventario G
+			WHERE G.TipoMovimiento = 'Gasto en corral' AND g.NombreLinea = 'Gastos Directos' 
+				AND G.idBodega LIKE 'AS%'  
+		GROUP BY G.idBodega, DATEPART(WEEK,G.Fecha), DATEPART(YEAR,G.Fecha)) AS GD
+	ON RG.Almacen = GD.Granja AND RG.Semana = GD.semana AND RG.Año = GD.Año
+	LEFT JOIN --Sueldos y Prestaciones
+		(SELECT G.idBodega AS Granja, DATEPART(WEEK,G.Fecha) AS Semana, SUM(G.Costo)*-1 AS Costo, 
+			DATEPART(YEAR,G.Fecha) AS Año
+			FROM dbo.gridMovimientosInventario G
+			WHERE G.TipoMovimiento = 'Gasto en corral' AND g.NombreLinea = 'Sueldos y Prestaciones' 
+				AND G.idBodega LIKE 'ASJP%'  
+		GROUP BY G.idBodega,DATEPART(WEEK,G.Fecha), DATEPART(YEAR,G.Fecha)) AS SP
+	ON RG.Almacen = SP.Granja AND RG.Semana = SP.semana AND RG.Año = SP.Año
+GROUP BY RG.Almacen, RG.Semana, RG.Año, RG.Kilos,RG.Cantidad,RG.Cajas,MP.Costo,F.Costo,
+			F.Kilos, MV.Costo, AC.Costo, M.Cantidad,GD.Costo,SP.Costo) AS T
+GROUP BY T.Almacen,T.Semana,T.Año, T.Gallinas, T.Muertes,
+	T.Mortalidad, T.Postura, T.KilosXCaja,T.F, T.ConvAlim, T.FxG,
+	T.CA, T.CAxG, T.MP, T.MPxG, T.MV, T.MVxG, T.GD, T.GDxG, T.SP,T.SPxG,T.Kilos
+
+HAVING T.Semana &gt;= DATEPART(WEEK,@FechaInicio) AND T.Semana &lt;= DATEPART(WEEK,@FechaFinal)
+AND T.Año &gt;= DATEPART(YEAR,@FechaInicio) AND T.Año &lt;= DATEPART(YEAR,@FechaFinal)</Sentencia>
+>>>>>>> main
     </Tabla>
     <Tabla>
       <HasChanges>false</HasChanges>
@@ -164,10 +287,25 @@ ORDER BY  V.Año DESC, V.Semana DESC
 
 </Sentencia>
     </Tabla>
+<<<<<<< HEAD
+=======
+    <Tabla>
+      <HasChanges>false</HasChanges>
+      <id>b220d27d-956c-433b-aedc-0978cc0bb15d</id>
+      <idPadre>00000000-0000-0000-0000-000000000000</idPadre>
+      <Nombre>Pollitas</Nombre>
+      <Sentencia>SELECT G.idBodega, G.Fecha AS 'Fecha Inicio PosturA', G.Cantidad AS 'Gallinas Inicio Postura', G.Costo,
+	G.CostoUnitario AS 'Costo por Gallina'
+	 FROM dbo.gridMovimientosInventario AS G 
+WHERE G.TipoMovimiento = 'Entrada por Nacimiento' AND G.Codigo = '9006'
+AND G.Cantidad&gt;10</Sentencia>
+    </Tabla>
+>>>>>>> main
   </Tablas>
   <Outputs>
     <Output xsi:type="OutputDashboard">
       <Tipo>Dashboard</Tipo>
+<<<<<<< HEAD
       <Nombre>VTA/RECOLECCION HUEVO</Nombre>
       <id>682e496c-ebb2-4c4f-becd-352fec946a78</id>
       <Layout>&lt;?xml version="1.0" encoding="utf-8"?&gt;
@@ -847,6 +985,33 @@ ORDER BY  V.Año DESC, V.Semana DESC
   </Outputs>
   <Relaciones />
   <Parametros />
+=======
+      <Nombre>DashBoard</Nombre>
+      <id>fa9a452f-030a-41c4-89d1-ca4f2c1d02a0</id>
+    </Output>
+  </Outputs>
+  <Relaciones />
+  <Parametros>
+    <Parametro>
+      <Tipo>Fecha</Tipo>
+      <Nombre>@FechaInicio</Nombre>
+      <Valor xsi:type="xsd:dateTime">2021-06-01T00:00:00</Valor>
+      <Etiqueta>Del día:</Etiqueta>
+      <Orden>1</Orden>
+      <HasChanges>false</HasChanges>
+      <AskForValue>true</AskForValue>
+    </Parametro>
+    <Parametro>
+      <Tipo>Fecha</Tipo>
+      <Nombre>@FechaFinal</Nombre>
+      <Valor xsi:type="xsd:dateTime">2021-07-01T00:00:00</Valor>
+      <Etiqueta>Al día:</Etiqueta>
+      <Orden>2</Orden>
+      <HasChanges>false</HasChanges>
+      <AskForValue>true</AskForValue>
+    </Parametro>
+  </Parametros>
+>>>>>>> main
   <ParametrosFormDesign>
     <FormSize>
       <Width>0</Width>

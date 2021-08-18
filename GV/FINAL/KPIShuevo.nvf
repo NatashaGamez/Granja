@@ -3,6 +3,7 @@
   <Tablas>
     <Tabla>
       <HasChanges>false</HasChanges>
+<<<<<<< HEAD
       <id>7ced055c-2d47-4eaa-9b41-6bf7a732593b</id>
       <idPadre>00000000-0000-0000-0000-000000000000</idPadre>
       <Nombre>Recolleccion</Nombre>
@@ -125,7 +126,263 @@ GROUP BY T.Almacen,T.Semana,T.Año, T.Gallinas, T.Muertes,
 	T.Mortalidad, T.Postura, T.KilosXCaja,T.F, T.ConvAlim, T.FxG,
 	T.CA, T.CAxG, T.MP, T.MPxG, T.MV, T.MVxG, T.GD, T.GDxG, T.SP,T.SPxG,T.Kilos, T.Cantidad,T.Postura,T.Cajas, T.KiloAlim,T.CostoConvAlim
 HAVING T.Semana &gt;= DATEPART(WEEK,@FechaInicio) AND T.Semana &lt;= DATEPART(WEEK,@FechaFinal)
+=======
+      <id>3f87fbff-412c-4348-be78-2073a35c3240</id>
+      <idPadre>00000000-0000-0000-0000-000000000000</idPadre>
+      <Nombre>Med Prev Veterinario</Nombre>
+      <Sentencia>SELECT mvp.idBodega AS Granja, mvp.Referencia AS Capa, DATEPART(year, MVP.Fecha) AS Año,
+	SUM(MVP.Costo)*-1 AS Costo 
+	FROM dbo.gridMovimientosInventario MVP
+	WHERE MVP.TipoMovimiento = 'Salida por traspaso de corral' AND MVP.NombreLinea = 'Medicamento Preventivo Veterinario' 
+		AND mvp.idBodega LIKE 'ASJP%' AND mvp.EntradaSalida = 'S'
+	GROUP BY mvp.idBodega, mvp.Referencia, DATEPART(year, MVP.Fecha)</Sentencia>
+    </Tabla>
+    <Tabla>
+      <HasChanges>false</HasChanges>
+      <id>a1440b87-d360-44a8-ade2-1bc4225e324f</id>
+      <idPadre>00000000-0000-0000-0000-000000000000</idPadre>
+      <Nombre>Sueldos y prestaciones</Nombre>
+      <Sentencia>SELECT G.idBodega AS Granja, G.Referencia, SUM(G.Costo)*-1,  DATEPART(YEAR,G.Fecha) AS Año,
+	min(g.Fecha) AS fechainicio, max(g.Fecha) AS fechafinal
+	FROM dbo.gridMovimientosInventario G
+	WHERE G.TipoMovimiento = 'Gasto en corral' AND g.NombreLinea = 'Sueldos y Prestaciones' 
+		AND G.idBodega LIKE 'ASJP%'  
+	GROUP BY G.idBodega, G.Referencia, DATEPART(YEAR,G.Fecha)</Sentencia>
+    </Tabla>
+    <Tabla>
+      <HasChanges>false</HasChanges>
+      <id>45df836a-62b7-4288-be08-4885acc2184f</id>
+      <idPadre>00000000-0000-0000-0000-000000000000</idPadre>
+      <Nombre>Gastos Directos</Nombre>
+      <Sentencia>SELECT G.idBodega AS Granja, G.Referencia, SUM(G.Costo)*-1,  DATEPART(YEAR,G.Fecha) AS Año
+	FROM dbo.gridMovimientosInventario G
+	WHERE G.TipoMovimiento = 'Gasto en corral' AND g.NombreLinea = 'Gastos Directos' 
+		AND G.idBodega LIKE 'ASJP%'  
+GROUP BY G.idBodega, G.Referencia, DATEPART(YEAR,G.Fecha)</Sentencia>
+    </Tabla>
+    <Tabla>
+      <HasChanges>false</HasChanges>
+      <id>34848d18-b3f8-47c2-9405-fd2a1b8181ae</id>
+      <idPadre>00000000-0000-0000-0000-000000000000</idPadre>
+      <Nombre>Material Venterinario</Nombre>
+      <Sentencia>SELECT mvp.idBodega AS Granja, mvp.Referencia AS Capa, DATEPART(year, MVP.Fecha) AS Año,
+SUM(MVP.Costo)*-1 AS Costo 
+	FROM dbo.gridMovimientosInventario MVP
+	WHERE MVP.TipoMovimiento = 'Salida por traspaso de corral' AND MVP.NombreLinea = 'Material  Medico Veterinario'
+		AND mvp.idBodega LIKE 'ASJP%' AND mvp.EntradaSalida = 'S'
+GROUP BY mvp.idBodega, mvp.Referencia, DATEPART(year, MVP.Fecha)</Sentencia>
+    </Tabla>
+    <Tabla>
+      <HasChanges>false</HasChanges>
+      <id>0d46350c-d569-40d8-aa09-5c73df23568a</id>
+      <idPadre>00000000-0000-0000-0000-000000000000</idPadre>
+      <Nombre>Alimento terminado y complementos</Nombre>
+      <Sentencia>SELECT mvp.idBodega AS Granja, mvp.Referencia AS Capa, DATEPART(year, MVP.Fecha) AS Año,
+SUM(MVP.Costo)*-1 AS Costo 
+	FROM dbo.gridMovimientosInventario MVP
+	WHERE MVP.TipoMovimiento = 'Salida por traspaso de corral' AND MVP.NombreLinea = 'Alimento Terminado y Complementos Alimenticios'
+		AND mvp.idBodega LIKE 'ASJP%' AND mvp.EntradaSalida = 'S'
+GROUP BY mvp.idBodega, mvp.Referencia, DATEPART(year, MVP.Fecha)</Sentencia>
+    </Tabla>
+    <Tabla>
+      <HasChanges>false</HasChanges>
+      <id>7ced055c-2d47-4eaa-9b41-6bf7a732593b</id>
+      <idPadre>00000000-0000-0000-0000-000000000000</idPadre>
+      <Nombre>Recolleccion</Nombre>
+<<<<<<< HEAD
+      <Sentencia>SELECT --R.idBodegaOrigen AS Almacen, 
+	DATEPART(week,R.Fecha) AS Semana,DATEPART(year,R.Fecha) AS Año,
+	Sum(R.Cantidad) AS Cantidad,
+	Sum(R.NoCajas) AS Cajas, SUM(R.Peso) AS Kilos,
+	--G.Existencia AS Gallinas,
+	--Sum(R.Cantidad)/nullif(G.Existencia,0) AS '%Postura',
+	SUM(R.Peso)/nullif(Sum(R.NoCajas),0) AS 'Kilos por caja'
+FROM vol.gridTraspasosCorral R 
+--INNER JOIN erp.ProductoExistencia G ON R.idBodegaOrigen = G.idBodega
+WHERE R.Descripcion LIKE 'Huevo%' --AND G.idProducto = '9006'
+GROUP BY DATEPART(week,R.Fecha), DATEPART(year,R.Fecha)--,G.Existencia
+-- OBSERVACIÓN: El número de gallinas no es por historial (solo sacamos las que actual mente hay)
+-- no se saben las que hubo hace una semana</Sentencia>
+    </Tabla>
+    <Tabla>
+      <HasChanges>false</HasChanges>
+      <id>cbb62d5a-10d1-4dd7-b578-e635fb0a0127</id>
+      <idPadre>00000000-0000-0000-0000-000000000000</idPadre>
+      <Nombre>Gallinas</Nombre>
+      <Sentencia>
+SELECT * FROM erp.gridTraspasos
+--SELECT  G.idBodega ,DATEPART(week,G.Fecha) AS Semana, DATEPART(year,G.Fecha) AS Año,
+--	Sum(G.Cantidad) AS Cantidad
+--FROM dbo.gridMovimientosInventario G
+--WHERE g.Codigo = '9006' AND (g.TipoMovimiento = 'Salida por muerte animal' or
+--g.TipoMovimiento = 'Entrada por Nacimiento')
+--GROUP BY G.idBodega,DATEPART(week,G.Fecha), DATEPART(year,G.Fecha)
+
+-- Intento para sacar historial de gallinas</Sentencia>
+    </Tabla>
+    <Tabla>
+      <HasChanges>false</HasChanges>
+      <id>df6887e4-96c2-46f1-9ba1-d69952fe9404</id>
+      <idPadre>00000000-0000-0000-0000-000000000000</idPadre>
+      <Nombre>Formulaciones</Nombre>
+      <Sentencia>SELECT A.idBodega AS Almacen, A.Referencia, 
+	DATEPART(year,A.Fecha) AS Año, 
+	SUM(CASE A.Unidad WHEN 'TON' THEN A.Cantidad*-907.185 ELSE A.Cantidad*-1 END) AS 'Kilos alimento',
+	SUM(A.Costo)*-1 AS Costo
+FROM dbo.gridMovimientosInventario A
+WHERE A.TipoMovimiento = 'Salida por traspaso de corral' 
+		AND A.NombreLinea = 'Formulaciones' AND A.idBodega LIKE '%[0-9]'
+GROUP BY a.idBodega, A.Referencia, DATEPART(year,A.Fecha)
+</Sentencia>
+    </Tabla>
+    <Tabla>
+      <HasChanges>false</HasChanges>
+      <id>4d82dcc0-accb-4340-8c02-541feba7fc28</id>
+      <idPadre>00000000-0000-0000-0000-000000000000</idPadre>
+      <Nombre>Muerte</Nombre>
+      <Sentencia>SELECT  G.idBodega ,DATEPART(week,G.Fecha) AS Semana, DATEPART(year,G.Fecha) AS Año,
+	Sum(G.Cantidad)*-1 AS Cantidad
+FROM dbo.gridMovimientosInventario G
+WHERE g.Codigo = '9006' AND G.TipoMovimiento = 'Salida por muerte animal'
+GROUP BY G.idBodega, DATEPART(week,G.Fecha), DATEPART(year,G.Fecha)</Sentencia>
+    </Tabla>
+    <Tabla>
+      <HasChanges>false</HasChanges>
+      <id>f9d3af4e-8703-4c84-8491-44380d171d65</id>
+      <idPadre>00000000-0000-0000-0000-000000000000</idPadre>
+      <Nombre>Empaque</Nombre>
+      <Sentencia>SELECT E.idBodega AS Almacen, Datepart(week,E.Fecha) AS Semana,
+	Datepart(year,E.Fecha) AS Año ,SUM(E.Costo) AS Costo 
+FROM dbo.gridMovimientosInventario E
+WHERE E.TipoMovimiento = 'Traspaso de almacén' 
+	AND E.NombreLinea = 'Empaques y embalajes'
+	AND E.EntradaSalida = 'E'
+	AND E.NombreCategoria = 'Aves'
+	AND E.idBodega LIKE 'AS%'
+GROUP BY E.idBodega, Datepart(week,E.Fecha), Datepart(year,E.Fecha)</Sentencia>
+=======
+      <Sentencia>SELECT T.Almacen,T.Semana AS 'Semana del Año', T.Año, T.Gallinas, 
+	(ISNULL(T.GDxG,0) + ISNULL(T.SPxG,0) + ISNULL(T.FxG,0)  + ISNULL(T.CAxG,0) + ISNULL(T.MPxG,0) + ISNULL(T.MVxG,0)) AS 'Costo por Gallina',
+	T.Muertes,
+	T.Muertes*(ISNULL(T.GDxG,0) + ISNULL(T.SPxG,0) + ISNULL(T.FxG,0)  + ISNULL(T.CAxG,0) + ISNULL(T.MPxG,0) + ISNULL(T.MVxG,0)) AS 'Perdida por Muerte',
+	T.Mortalidad AS '% Mortalidad', T.Postura AS '% Postura',
+	(ISNULL(T.GD,0) + ISNULL(T.SP,0) + ISNULL(T.F,0)  + ISNULL(T.CA,0) + ISNULL(T.MP,0) + ISNULL(T.MV,0))/nullif(T.Postura,0) AS 'Costo por %Podtura',
+	T.Kilos, T.KilosXCaja AS 'Kilos por Caja',
+	T.F AS 'Alimento Consumido', T.ConvAlim AS 'Conversion Alimenticia', T.FxG AS 'Alimento por Gallina',
+	T.CA AS 'Complemto Alimenticio', T.CAxG AS 'Complemto Alimenticio por Gallina', 
+	T.MP AS 'Med Preventivo', T.MPxG AS 'Med Preventivo por Gallina',
+	T.MV AS 'Material Veterianrio', T.MVxG AS 'Mat Vet por Gallina',
+	T.GD AS 'Gastos Directos', T.GDxG AS 'Gastos Directos por Gallina',
+	T.SP AS 'Sueldos y Prestaciones',T.SPxG AS 'Sueldos y Pres por Gallinas'
+FROM -- Union de todo 
+	(SELECT RG.Almacen, RG.Semana, RG.Año,
+	SUM(SUM(RG.Gallinas)) OVER(PARTITION BY RG.Almacen ORDER BY RG.Año, RG.Semana) AS Gallinas, RG.Kilos,
+	NULLIF(RG.Cantidad,0)/NULLIF(SUM(SUM(RG.Gallinas)) OVER(PARTITION BY RG.Almacen ORDER BY RG.Año, RG.Semana),0) AS Postura,
+	NULLIF(RG.Kilos,0)/NULLIF(RG.Cajas,0) AS KilosXCaja	,
+	M.Cantidad AS Muertes, 
+	M.Cantidad/NULLIF(SUM(SUM(RG.Gallinas)) OVER(PARTITION BY RG.Almacen ORDER BY RG.Año, RG.Semana),0) AS Mortalidad,
+	F.Costo AS F, F.Kilos/NULLIF(RG.Kilos,0) AS ConvAlim,
+	F.Costo/NULLIF(SUM(SUM(RG.Gallinas)) OVER(PARTITION BY RG.Almacen ORDER BY RG.Año, RG.Semana),0) AS FxG,
+	GD.Costo AS GD, 
+	GD.Costo/NULLIF(SUM(SUM(RG.Gallinas)) OVER(PARTITION BY RG.Almacen ORDER BY RG.Año, RG.Semana),0) AS GDxG,
+	SP.Costo AS SP, 
+	SP.Costo/NULLIF(SUM(SUM(RG.Gallinas)) OVER(PARTITION BY RG.Almacen ORDER BY RG.Año, RG.Semana),0) AS SPxG,
+	AC.Costo AS CA, 
+	AC.Costo/NULLIF(SUM(SUM(RG.Gallinas)) OVER(PARTITION BY RG.Almacen ORDER BY RG.Año, RG.Semana),0) AS CAxG,
+	MP.Costo AS MP, 
+	MP.Costo/NULLIF(SUM(SUM(RG.Gallinas)) OVER(PARTITION BY RG.Almacen ORDER BY RG.Año, RG.Semana),0) AS MPxG,
+	MV.Costo AS MV, 
+	MV.Costo/NULLIF(SUM(SUM(RG.Gallinas)) OVER(PARTITION BY RG.Almacen ORDER BY RG.Año, RG.Semana),0) AS MVxG
+		FROM -- Union recoleccion y gallinas 
+		(SELECT CASE WHEN Re.Almacen IS NULL THEN EG.idBodega ELSE Re.Almacen END AS Almacen,
+			CASE WHEN Re.Semana IS NULL THEN EG.Semana ELSE Re.Semana END AS Semana,
+			CASE WHEN Re.Año IS NULL THEN EG.Año ELSE RE.Año END AS Año, 
+			Re.Kilos, Re.Cantidad, Re.Cajas,  
+			CASE WHEN EG.Gallinas IS NULL THEN 0 ELSE EG.Gallinas END AS Gallinas
+			FROM -- Recoleccion Huevo
+				(SELECT R.idBodegaOrigen AS Almacen, DATEPART(week,R.Fecha) AS Semana, DATEPART(year,R.Fecha) AS Año,
+					Sum(R.Cantidad) AS Cantidad,
+					Sum(R.NoCajas) AS Cajas, SUM(R.Peso) AS Kilos
+				FROM vol.gridTraspasosCorral R 
+				WHERE R.Descripcion LIKE 'Huevo%'
+				GROUP BY  R.idBodegaOrigen, DATEPART(week,R.Fecha), DATEPART(year,R.Fecha)) AS Re
+			FULL OUTER JOIN -- Existencia Gallinas
+				(SELECT G.idBodega, DATEPART(week, G.Fecha) AS Semana, DATEPART(year, G.Fecha) AS Año, 
+				SUM(G.Cantidad) AS Gallinas
+					FROM dbo.gridMovimientosInventario G
+					WHERE G.Codigo = '9006' AND G.idBodega LIKE 'A%'
+				GROUP BY G.idBodega,DATEPART(week,G.Fecha),DATEPART(year,G.Fecha)) AS EG
+			ON Re.Almacen = EG.idBodega AND Re.Semana = EG. Semana AND Re.Año = EG.Año
+			GROUP BY Re.Almacen, Re.Semana, Re.Año, Re.Kilos, Re.Cantidad,
+			RE.Cajas, EG.Gallinas, EG.idBodega, EG.Semana, EG.Año) AS RG
+	LEFT JOIN -- Medicamento Preventivo Veterinario
+		(SELECT mvp.idBodega AS Granja, 
+		DATEPART(week, MVP.Fecha) AS Semana, DATEPART(year, MVP.Fecha) AS Año,
+		SUM(MVP.Costo)*-1 AS Costo 
+			FROM dbo.gridMovimientosInventario MVP
+			WHERE MVP.TipoMovimiento = 'Salida por traspaso de corral' AND MVP.NombreLinea = 'Medicamento Preventivo Veterinario' 
+				AND mvp.idBodega LIKE 'ASJP%' AND mvp.EntradaSalida = 'S'
+		GROUP BY mvp.idBodega, DATEPART(week, MVP.Fecha), DATEPART(year, MVP.Fecha)) AS MP
+	ON RG.Almacen = MP.Granja AND RG.Semana = MP.semana AND RG.Año = MP.Año
+	LEFT JOIN --Formulaciones
+		(SELECT A.idBodega AS Almacen, DATEPART(WEEK,A.Fecha) AS Semana,
+		DATEPART(year,A.Fecha) AS Año, 
+		SUM(CASE A.Unidad WHEN 'TON' THEN A.Cantidad*-907.185 ELSE A.Cantidad*-1 END) AS Kilos,
+		SUM(A.Costo)*-1 AS Costo
+		FROM dbo.gridMovimientosInventario A
+		WHERE A.TipoMovimiento = 'Salida por traspaso de corral' 
+				AND A.NombreLinea = 'Formulaciones' AND A.idBodega LIKE 'AS%'
+		GROUP BY a.idBodega,DATEPART(WEEK,A.Fecha), DATEPART(year,A.Fecha)) AS F
+	ON RG.Almacen = F.Almacen AND RG.Semana = F.Semana AND RG.Año = F.Año
+	LEFT JOIN --Material Veterinario
+		(SELECT mvp.idBodega AS Granja, DATEPART(week, MVP.Fecha) AS Semana, DATEPART(year, MVP.Fecha) AS Año,
+		SUM(MVP.Costo)*-1 AS Costo 
+			FROM dbo.gridMovimientosInventario MVP
+			WHERE MVP.TipoMovimiento = 'Salida por traspaso de corral' AND MVP.NombreLinea = 'Material  Medico Veterinario'
+				AND mvp.idBodega LIKE 'ASJP%' AND mvp.EntradaSalida = 'S'
+		GROUP BY mvp.idBodega, mvp.Referencia, DATEPART(week, MVP.Fecha),DATEPART(year, MVP.Fecha)) AS MV
+	ON RG.Almacen = MV.Granja AND RG.Semana = MV.semana AND RG.Año = MV.Año
+	LEFT JOIN -- Alimento Terminado y Complementos Alimenticios
+		(SELECT mvp.idBodega AS Granja, DATEPART(week, MVP.Fecha) AS Semana, DATEPART(year, MVP.Fecha) AS Año,
+		SUM(MVP.Costo)*-1 AS Costo 
+			FROM dbo.gridMovimientosInventario MVP
+			WHERE MVP.TipoMovimiento = 'Salida por traspaso de corral' AND MVP.NombreLinea = 'Alimento Terminado y Complementos Alimenticios'
+				AND mvp.idBodega LIKE 'ASJP%' AND mvp.EntradaSalida = 'S'
+		GROUP BY mvp.idBodega, DATEPART(week, MVP.Fecha), DATEPART(year, MVP.Fecha)) AS AC
+	ON RG.Almacen = AC.Granja AND RG.Semana = AC.semana AND RG.Año = AC.Año
+	LEFT JOIN --Muertes
+		(SELECT  G.idBodega ,DATEPART(week,G.Fecha) AS Semana, DATEPART(year,G.Fecha) AS Año,
+		Sum(G.Cantidad)*-1 AS Cantidad
+		FROM dbo.gridMovimientosInventario G
+		WHERE g.Codigo = '9006' AND G.TipoMovimiento = 'Salida por muerte animal'
+		GROUP BY G.idBodega, DATEPART(week,G.Fecha), DATEPART(year,G.Fecha)) AS M
+	ON RG.Almacen = M.idBodega AND RG.Semana = M.Semana AND RG.Año = M.Año
+	LEFT JOIN -- Gastos Directos
+		(SELECT G.idBodega AS Granja,  DATEPART(WEEK,G.Fecha) AS Semana, DATEPART(YEAR,G.Fecha) AS Año,
+		SUM(G.Costo)*-1 AS Costo
+			FROM dbo.gridMovimientosInventario G
+			WHERE G.TipoMovimiento = 'Gasto en corral' AND g.NombreLinea = 'Gastos Directos' 
+				AND G.idBodega LIKE 'AS%'  
+		GROUP BY G.idBodega, DATEPART(WEEK,G.Fecha), DATEPART(YEAR,G.Fecha)) AS GD
+	ON RG.Almacen = GD.Granja AND RG.Semana = GD.semana AND RG.Año = GD.Año
+	LEFT JOIN --Sueldos y Prestaciones
+		(SELECT G.idBodega AS Granja, DATEPART(WEEK,G.Fecha) AS Semana, SUM(G.Costo)*-1 AS Costo, 
+			DATEPART(YEAR,G.Fecha) AS Año
+			FROM dbo.gridMovimientosInventario G
+			WHERE G.TipoMovimiento = 'Gasto en corral' AND g.NombreLinea = 'Sueldos y Prestaciones' 
+				AND G.idBodega LIKE 'ASJP%'  
+		GROUP BY G.idBodega,DATEPART(WEEK,G.Fecha), DATEPART(YEAR,G.Fecha)) AS SP
+	ON RG.Almacen = SP.Granja AND RG.Semana = SP.semana AND RG.Año = SP.Año
+GROUP BY RG.Almacen, RG.Semana, RG.Año, RG.Kilos,RG.Cantidad,RG.Cajas,MP.Costo,F.Costo,
+			F.Kilos, MV.Costo, AC.Costo, M.Cantidad,GD.Costo,SP.Costo) AS T
+GROUP BY T.Almacen,T.Semana,T.Año, T.Gallinas, T.Muertes,
+	T.Mortalidad, T.Postura, T.KilosXCaja,T.F, T.ConvAlim, T.FxG,
+	T.CA, T.CAxG, T.MP, T.MPxG, T.MV, T.MVxG, T.GD, T.GDxG, T.SP,T.SPxG,T.Kilos
+
+HAVING T.Semana &gt;= DATEPART(WEEK,@FechaInicio) AND T.Semana &lt;= DATEPART(WEEK,@FechaFinal)
+>>>>>>> main
 AND T.Año &gt;= DATEPART(YEAR,@FechaInicio) AND T.Año &lt;= DATEPART(YEAR,@FechaFinal)</Sentencia>
+>>>>>>> main
     </Tabla>
     <Tabla>
       <HasChanges>false</HasChanges>
@@ -135,6 +392,7 @@ AND T.Año &gt;= DATEPART(YEAR,@FechaInicio) AND T.Año &lt;= DATEPART(YEAR,@Fec
       <Sentencia>SELECT V.Semana, V.Año, V.Cajas, V.Kilos,  V.Kilos/V.Cajas AS 'Peso Caja Vendida',
 	V.Venta, V.Costo, V.Venta/V.Kilos AS Precio, V.Costo/V.Kilos AS CostoKilo,
 	 RE.KilosR, V.Kilos/RE.KilosR AS '%Kilos Rec Vendidos', 
+<<<<<<< HEAD
 	V.Kilos/RE.KilosR*7 AS 'Dias Rec Vendidos', E.Costo AS 'Costo Empaque',
 E.Costo/NULLIF(V.Cajas,0) AS 'Cosot Empaque por Caja Vendidas'
 FROM -- Venta Huevo 
@@ -142,17 +400,31 @@ FROM -- Venta Huevo
 SUM(Try_cast(F.Kilos AS FLOAT)) AS Cajas,
 SUM(F.Cantidad)*-1 AS Kilos, SUM(F.Venta)*-1 AS Venta,
 SUM(F.Costo)*-1 AS Costo 
+=======
+	V.Kilos/RE.KilosR*7 AS 'Dias Rec Vendidos'
+FROM (SELECT datepart(week,F.Fecha) AS Semana, datepart(year,F.Fecha) AS Año,
+		SUM(Try_cast(F.Kilos AS FLOAT)) AS Cajas,
+		SUM(F.Cantidad)*-1 AS Kilos, SUM(F.Venta)*-1 AS Venta,
+		SUM(F.Costo)*-1 AS Costo 
+>>>>>>> main
 	FROM dbo.gridMovimientosInventario F
 WHERE (F.TipoMovimiento = 'Salida por facturación' OR F.TipoMovimiento = 'Cancelación') 
 		AND F.NombreLinea = 'Huevo' AND F.Codigo = '9010'
+<<<<<<< HEAD
 GROUP BY datepart(week,F.Fecha), datepart(year,F.Fecha)) AS V
 	LEFT JOIN -- Recoleccion Huevo
 ( SELECT datepart(week,R.Fecha) AS Week, 
 datepart(year,R.Fecha) AS Year, SUM(R.Peso) AS KilosR
+=======
+		GROUP BY datepart(week,F.Fecha), datepart(year,F.Fecha)) AS V
+	LEFT JOIN ( SELECT datepart(week,R.Fecha) AS Week, 
+		datepart(year,R.Fecha) AS Year, SUM(R.Peso) AS KilosR
+>>>>>>> main
 		FROM vol.gridTraspasosCorral R 
 		WHERE R.Descripcion LIKE 'Huevo%'
 GROUP BY datepart(week,R.Fecha), datepart(year,R.Fecha)) AS RE
 		ON V.Semana = RE.Week AND V.Año = RE.Year
+<<<<<<< HEAD
 	LEFT JOIN -- Empaque
 (SELECT E.idBodega AS Almacen, Datepart(week,E.Fecha) AS Semana,
 Datepart(year,E.Fecha) AS Año ,SUM(E.Costo) AS Costo 
@@ -169,7 +441,15 @@ GROUP BY V.Semana, V.Año, V.Cajas, V.Kilos, V.Venta, V.Costo, RE.KilosR, E.Cost
 HAVING V.Semana &gt;= DATEPART(WEEK,@FechaInicio) AND V.Semana &lt;= DATEPART(WEEK,@FechaFinal)
 AND V.Año &gt;= DATEPART(YEAR,@FechaInicio) AND V.Año &lt;= DATEPART(YEAR,@FechaFinal)
 	ORDER BY  V.Año DESC, V.Semana </Sentencia>
+=======
+GROUP BY V.Semana, V.Año, V.Cajas, V.Kilos, V.Venta, V.Costo, RE.KilosR
+ORDER BY  V.Año DESC, V.Semana DESC 
+
+</Sentencia>
+>>>>>>> main
     </Tabla>
+<<<<<<< HEAD
+=======
     <Tabla>
       <HasChanges>false</HasChanges>
       <id>b220d27d-956c-433b-aedc-0978cc0bb15d</id>
@@ -181,10 +461,12 @@ AND V.Año &gt;= DATEPART(YEAR,@FechaInicio) AND V.Año &lt;= DATEPART(YEAR,@Fec
 WHERE G.TipoMovimiento = 'Entrada por Nacimiento' AND G.Codigo = '9006'
 AND G.Cantidad&gt;10</Sentencia>
     </Tabla>
+>>>>>>> main
   </Tablas>
   <Outputs>
     <Output xsi:type="OutputDashboard">
       <Tipo>Dashboard</Tipo>
+<<<<<<< HEAD
       <Nombre>Tablero Huevo</Nombre>
       <id>b313d434-021f-48cd-8a6e-8c25362c6f1d</id>
       <Layout>&lt;?xml version="1.0" encoding="utf-8"?&gt;
@@ -198,10 +480,165 @@ AND G.Cantidad&gt;10</Sentencia>
       &lt;DataSource Type="System.Data.DataTable, System.Data, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089" /&gt;
     &lt;/ObjectDataSource&gt;
     &lt;ObjectDataSource Name="Pollitas" ComponentName="dashboardObjectDataSource3"&gt;
+=======
+<<<<<<< HEAD
+      <Nombre>VTA/RECOLECCION HUEVO</Nombre>
+      <id>682e496c-ebb2-4c4f-becd-352fec946a78</id>
+      <Layout>&lt;?xml version="1.0" encoding="utf-8"?&gt;
+&lt;Dashboard CurrencyCulture="es-MX"&gt;
+  &lt;Title Text="HUEVO " /&gt;
+  &lt;DataSources&gt;
+    &lt;ObjectDataSource Name="Med Prev Veterinario" ComponentName="dashboardObjectDataSource1" /&gt;
+    &lt;ObjectDataSource Name="Sueldos y prestaciones" ComponentName="dashboardObjectDataSource2" /&gt;
+    &lt;ObjectDataSource Name="Gastos Directos" ComponentName="dashboardObjectDataSource3" /&gt;
+    &lt;ObjectDataSource Name="Material Venterinario" ComponentName="dashboardObjectDataSource4" /&gt;
+    &lt;ObjectDataSource Name="Alimento terminado y complementos" ComponentName="dashboardObjectDataSource5" /&gt;
+    &lt;ObjectDataSource Name="Recolleccion" ComponentName="dashboardObjectDataSource6" /&gt;
+    &lt;ObjectDataSource Name="Gallinas" ComponentName="dashboardObjectDataSource7" /&gt;
+    &lt;ObjectDataSource Name="Formulaciones" ComponentName="dashboardObjectDataSource8" /&gt;
+    &lt;ObjectDataSource Name="Muerte" ComponentName="dashboardObjectDataSource9" /&gt;
+    &lt;ObjectDataSource Name="Empaque" ComponentName="dashboardObjectDataSource10" /&gt;
+    &lt;ObjectDataSource Name="VentaRecoleccion" ComponentName="dashboardObjectDataSource11" /&gt;
+  &lt;/DataSources&gt;
+  &lt;Items&gt;
+    &lt;Pivot ComponentName="pivotDashboardItem1" Name="Venta / Recolecciòn" DataSource="dashboardObjectDataSource11"&gt;
+      &lt;DataItems&gt;
+        &lt;Measure DataMember="%Kilos Rec Vendidos" DefaultId="DataItem1" /&gt;
+        &lt;Dimension DataMember="Año" SortOrder="Descending" DefaultId="DataItem3"&gt;
+          &lt;NumericFormat FormatType="Number" Unit="Ones" /&gt;
+        &lt;/Dimension&gt;
+        &lt;Measure DataMember="Cajas" DefaultId="DataItem0" /&gt;
+        &lt;Measure DataMember="Kilos" DefaultId="DataItem5" /&gt;
+        &lt;Measure DataMember="KilosR" DefaultId="DataItem6" /&gt;
+        &lt;Measure DataMember="Peso Caja Vendida" DefaultId="DataItem4" /&gt;
+        &lt;Measure DataMember="Costo" DefaultId="DataItem2"&gt;
+          &lt;NumericFormat FormatType="Currency" Unit="Ones" IncludeGroupSeparator="true" /&gt;
+        &lt;/Measure&gt;
+        &lt;Measure DataMember="Precio" DefaultId="DataItem7" /&gt;
+        &lt;Measure DataMember="Venta" DefaultId="DataItem8" /&gt;
+      &lt;/DataItems&gt;
+      &lt;FormatRules&gt;
+        &lt;PivotItemFormatRule Name="FormatRule 1" DataItem="DataItem3"&gt;
+          &lt;FormatConditionExpression&gt;
+            &lt;AppearanceSettings AppearanceType="PaleRed" /&gt;
+          &lt;/FormatConditionExpression&gt;
+          &lt;PivotItemFormatRuleLevel /&gt;
+        &lt;/PivotItemFormatRule&gt;
+      &lt;/FormatRules&gt;
+      &lt;Rows&gt;
+        &lt;Row DefaultId="DataItem3" /&gt;
+      &lt;/Rows&gt;
+      &lt;Values&gt;
+        &lt;Value DefaultId="DataItem1" /&gt;
+        &lt;Value DefaultId="DataItem0" /&gt;
+        &lt;Value DefaultId="DataItem5" /&gt;
+        &lt;Value DefaultId="DataItem6" /&gt;
+        &lt;Value DefaultId="DataItem4" /&gt;
+        &lt;Value DefaultId="DataItem2" /&gt;
+        &lt;Value DefaultId="DataItem7" /&gt;
+        &lt;Value DefaultId="DataItem8" /&gt;
+      &lt;/Values&gt;
+    &lt;/Pivot&gt;
+    &lt;Pivot ComponentName="pivotDashboardItem2" Name="EMPAQUE" DataSource="dashboardObjectDataSource10"&gt;
+      &lt;DataItems&gt;
+        &lt;Dimension DataMember="Año" DefaultId="DataItem1"&gt;
+          &lt;NumericFormat FormatType="General" /&gt;
+        &lt;/Dimension&gt;
+        &lt;Dimension DataMember="Semana" DefaultId="DataItem2" /&gt;
+        &lt;Measure DataMember="Costo" DefaultId="DataItem3"&gt;
+          &lt;NumericFormat FormatType="Currency" Unit="Ones" IncludeGroupSeparator="true" CurrencyCultureName="es-MX" /&gt;
+        &lt;/Measure&gt;
+        &lt;Dimension DataMember="Almacen" DefaultId="DataItem0" /&gt;
+        &lt;Measure DataMember="Costo" DefaultId="DataItem4" /&gt;
+      &lt;/DataItems&gt;
+      &lt;Columns&gt;
+        &lt;Column DefaultId="DataItem0" /&gt;
+      &lt;/Columns&gt;
+      &lt;Rows&gt;
+        &lt;Row DefaultId="DataItem1" /&gt;
+        &lt;Row DefaultId="DataItem2" /&gt;
+      &lt;/Rows&gt;
+      &lt;Values&gt;
+        &lt;Value DefaultId="DataItem3" /&gt;
+        &lt;Value DefaultId="DataItem4" /&gt;
+      &lt;/Values&gt;
+    &lt;/Pivot&gt;
+    &lt;Chart ComponentName="chartDashboardItem1" Name="GRAFICO" DataSource="dashboardObjectDataSource11"&gt;
+      &lt;DataItems&gt;
+        &lt;Measure DataMember="%Kilos Rec Vendidos" DefaultId="DataItem1" /&gt;
+        &lt;Measure DataMember="Año" DefaultId="DataItem0" /&gt;
+      &lt;/DataItems&gt;
+      &lt;Panes&gt;
+        &lt;Pane Name="Panel 1"&gt;
+          &lt;Series&gt;
+            &lt;Simple&gt;
+              &lt;Value DefaultId="DataItem1" /&gt;
+            &lt;/Simple&gt;
+            &lt;Simple SeriesType="Line"&gt;
+              &lt;Value DefaultId="DataItem0" /&gt;
+            &lt;/Simple&gt;
+          &lt;/Series&gt;
+        &lt;/Pane&gt;
+      &lt;/Panes&gt;
+      &lt;ChartLegend OutsidePosition="TopCenterHorizontal" /&gt;
+    &lt;/Chart&gt;
+  &lt;/Items&gt;
+  &lt;LayoutTree&gt;
+    &lt;LayoutGroup Weight="100"&gt;
+      &lt;LayoutGroup Orientation="Vertical" Weight="50.0408830744072"&gt;
+        &lt;LayoutItem DashboardItem="pivotDashboardItem1" Weight="49.917081260364846" /&gt;
+        &lt;LayoutItem DashboardItem="pivotDashboardItem2" Weight="50.082918739635154" /&gt;
+      &lt;/LayoutGroup&gt;
+      &lt;LayoutItem DashboardItem="chartDashboardItem1" Weight="49.9591169255928" /&gt;
+    &lt;/LayoutGroup&gt;
+  &lt;/LayoutTree&gt;
+&lt;/Dashboard&gt;</Layout>
+    </Output>
+    <Output xsi:type="OutputDashboard">
+      <Tipo>Dashboard</Tipo>
+      <Nombre>COSTO VETERINARIO / MATERIAL Y MEDICAMENTO </Nombre>
+      <id>2258ff0e-009c-4b86-a1ed-ec7415ebdfe1</id>
+      <Layout>&lt;?xml version="1.0" encoding="utf-8"?&gt;
+&lt;Dashboard CurrencyCulture="es-MX"&gt;
+  &lt;Title Text="COSTO MATERIAL Y MED PREV" /&gt;
+  &lt;DataSources&gt;
+    &lt;ObjectDataSource Name="Med Prev Veterinario" ComponentName="dashboardObjectDataSource1"&gt;
+      &lt;DataSource Type="System.Data.DataTable, System.Data, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089" /&gt;
+    &lt;/ObjectDataSource&gt;
+    &lt;ObjectDataSource Name="Sueldos y prestaciones" ComponentName="dashboardObjectDataSource2"&gt;
+      &lt;DataSource Type="System.Data.DataTable, System.Data, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089" /&gt;
+    &lt;/ObjectDataSource&gt;
+    &lt;ObjectDataSource Name="Gastos Directos" ComponentName="dashboardObjectDataSource3"&gt;
+      &lt;DataSource Type="System.Data.DataTable, System.Data, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089" /&gt;
+    &lt;/ObjectDataSource&gt;
+    &lt;ObjectDataSource Name="Material Venterinario" ComponentName="dashboardObjectDataSource4"&gt;
+      &lt;DataSource Type="System.Data.DataTable, System.Data, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089" /&gt;
+    &lt;/ObjectDataSource&gt;
+    &lt;ObjectDataSource Name="Alimento terminado y complementos" ComponentName="dashboardObjectDataSource5"&gt;
+      &lt;DataSource Type="System.Data.DataTable, System.Data, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089" /&gt;
+    &lt;/ObjectDataSource&gt;
+    &lt;ObjectDataSource Name="Recolleccion" ComponentName="dashboardObjectDataSource6"&gt;
+      &lt;DataSource Type="System.Data.DataTable, System.Data, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089" /&gt;
+    &lt;/ObjectDataSource&gt;
+    &lt;ObjectDataSource Name="Gallinas" ComponentName="dashboardObjectDataSource7"&gt;
+      &lt;DataSource Type="System.Data.DataTable, System.Data, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089" /&gt;
+    &lt;/ObjectDataSource&gt;
+    &lt;ObjectDataSource Name="Formulaciones" ComponentName="dashboardObjectDataSource8"&gt;
+      &lt;DataSource Type="System.Data.DataTable, System.Data, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089" /&gt;
+    &lt;/ObjectDataSource&gt;
+    &lt;ObjectDataSource Name="Muerte" ComponentName="dashboardObjectDataSource9"&gt;
+      &lt;DataSource Type="System.Data.DataTable, System.Data, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089" /&gt;
+    &lt;/ObjectDataSource&gt;
+    &lt;ObjectDataSource Name="Empaque" ComponentName="dashboardObjectDataSource10"&gt;
+      &lt;DataSource Type="System.Data.DataTable, System.Data, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089" /&gt;
+    &lt;/ObjectDataSource&gt;
+    &lt;ObjectDataSource Name="VentaRecoleccion" ComponentName="dashboardObjectDataSource11"&gt;
+>>>>>>> main
       &lt;DataSource Type="System.Data.DataTable, System.Data, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089" /&gt;
     &lt;/ObjectDataSource&gt;
   &lt;/DataSources&gt;
   &lt;Items&gt;
+<<<<<<< HEAD
     &lt;Chart ComponentName="chartDashboardItem1" Name="Venta y Recolección" DataSource="dashboardObjectDataSource2"&gt;
       &lt;ColoringOptions UseGlobalColors="false" /&gt;
       &lt;InteractivityOptions MasterFilterMode="Multiple" IsDrillDownEnabled="true" /&gt;
@@ -321,10 +758,65 @@ AND G.Cantidad&gt;10</Sentencia>
       &lt;SeriesDimensions&gt;
         &lt;SeriesDimension DefaultId="DataItem2" /&gt;
         &lt;SeriesDimension DefaultId="DataItem3" /&gt;
+=======
+    &lt;Pivot ComponentName="pivotDashboardItem2" Name="MED. PREV VETERINARIO" DataSource="dashboardObjectDataSource1"&gt;
+      &lt;DataItems&gt;
+        &lt;Dimension DataMember="Granja" DefaultId="DataItem0" /&gt;
+        &lt;Dimension DataMember="Año" DefaultId="DataItem1"&gt;
+          &lt;NumericFormat FormatType="Number" Precision="0" Unit="Ones" /&gt;
+        &lt;/Dimension&gt;
+        &lt;Measure DataMember="Costo" DefaultId="DataItem2"&gt;
+          &lt;NumericFormat FormatType="Currency" Unit="Ones" IncludeGroupSeparator="true" /&gt;
+        &lt;/Measure&gt;
+      &lt;/DataItems&gt;
+      &lt;Columns&gt;
+        &lt;Column DefaultId="DataItem1" /&gt;
+      &lt;/Columns&gt;
+      &lt;Rows&gt;
+        &lt;Row DefaultId="DataItem0" /&gt;
+      &lt;/Rows&gt;
+      &lt;Values&gt;
+        &lt;Value DefaultId="DataItem2" /&gt;
+      &lt;/Values&gt;
+    &lt;/Pivot&gt;
+    &lt;Pivot ComponentName="pivotDashboardItem3" Name="MATERIAL VETERINARIO" DataSource="dashboardObjectDataSource4"&gt;
+      &lt;DataItems&gt;
+        &lt;Dimension DataMember="Granja" DefaultId="DataItem0" /&gt;
+        &lt;Dimension DataMember="Capa" DefaultId="DataItem1" /&gt;
+        &lt;Dimension DataMember="Año" DefaultId="DataItem2"&gt;
+          &lt;NumericFormat FormatType="Number" Precision="0" Unit="Ones" /&gt;
+        &lt;/Dimension&gt;
+        &lt;Measure DataMember="Costo" DefaultId="DataItem3"&gt;
+          &lt;NumericFormat FormatType="Currency" Unit="Ones" IncludeGroupSeparator="true" CurrencyCultureName="es-MX" /&gt;
+        &lt;/Measure&gt;
+      &lt;/DataItems&gt;
+      &lt;Columns&gt;
+        &lt;Column DefaultId="DataItem2" /&gt;
+      &lt;/Columns&gt;
+      &lt;Rows&gt;
+        &lt;Row DefaultId="DataItem0" /&gt;
+        &lt;Row DefaultId="DataItem1" /&gt;
+      &lt;/Rows&gt;
+      &lt;Values&gt;
+        &lt;Value DefaultId="DataItem3" /&gt;
+      &lt;/Values&gt;
+    &lt;/Pivot&gt;
+    &lt;Chart ComponentName="chartDashboardItem1" Name="Gráfico 1" DataSource="dashboardObjectDataSource1"&gt;
+      &lt;DataItems&gt;
+        &lt;Measure DataMember="Año" DefaultId="DataItem1" /&gt;
+        &lt;Dimension DataMember="Costo" SortByMeasure="DataItem1" DefaultId="DataItem2"&gt;
+          &lt;NumericFormat FormatType="Number" Precision="0" Unit="Ones" /&gt;
+        &lt;/Dimension&gt;
+        &lt;Dimension DataMember="Granja" DefaultId="DataItem0" /&gt;
+      &lt;/DataItems&gt;
+      &lt;SeriesDimensions&gt;
+        &lt;SeriesDimension DefaultId="DataItem2" /&gt;
+>>>>>>> main
       &lt;/SeriesDimensions&gt;
       &lt;Arguments&gt;
         &lt;Argument DefaultId="DataItem0" /&gt;
       &lt;/Arguments&gt;
+<<<<<<< HEAD
       &lt;Values&gt;
         &lt;Value DefaultId="DataItem1" /&gt;
       &lt;/Values&gt;
@@ -574,11 +1066,31 @@ AND G.Cantidad&gt;10</Sentencia>
       &lt;LayoutGroup Orientation="Vertical" Weight="50.130321459600346"&gt;
         &lt;LayoutItem DashboardItem="cardDashboardItem1" Weight="67.1559633027523" /&gt;
         &lt;LayoutItem DashboardItem="gridDashboardItem1" Weight="32.844036697247709" /&gt;
+=======
+      &lt;Panes&gt;
+        &lt;Pane Name="Panel 1"&gt;
+          &lt;Series&gt;
+            &lt;Simple&gt;
+              &lt;Value DefaultId="DataItem1" /&gt;
+            &lt;/Simple&gt;
+          &lt;/Series&gt;
+        &lt;/Pane&gt;
+      &lt;/Panes&gt;
+    &lt;/Chart&gt;
+  &lt;/Items&gt;
+  &lt;LayoutTree&gt;
+    &lt;LayoutGroup Weight="100"&gt;
+      &lt;LayoutItem DashboardItem="chartDashboardItem1" Weight="48.042704626334519" /&gt;
+      &lt;LayoutGroup Orientation="Vertical" Weight="51.957295373665481"&gt;
+        &lt;LayoutItem DashboardItem="pivotDashboardItem2" Weight="49.917898193760266" /&gt;
+        &lt;LayoutItem DashboardItem="pivotDashboardItem3" Weight="50.082101806239734" /&gt;
+>>>>>>> main
       &lt;/LayoutGroup&gt;
     &lt;/LayoutGroup&gt;
   &lt;/LayoutTree&gt;
 &lt;/Dashboard&gt;</Layout>
     </Output>
+<<<<<<< HEAD
     <Output xsi:type="OutputGrid">
       <Tipo>Grid</Tipo>
       <Nombre>VENTA RECOLECCION </Nombre>
@@ -2904,6 +3416,457 @@ AND G.Cantidad&gt;10</Sentencia>
   &lt;property name="FindPanelVisible"&gt;false&lt;/property&gt;
 &lt;/XtraSerializer&gt;</Layout>
       <NombreTabla>Recolleccion</NombreTabla>
+=======
+    <Output xsi:type="OutputDashboard">
+      <Tipo>Dashboard</Tipo>
+      <Nombre>GALLINAS/MUERTES</Nombre>
+      <id>2a73b136-0100-49b8-a11e-ab0194ae6ab6</id>
+      <Layout>&lt;?xml version="1.0" encoding="utf-8"?&gt;
+&lt;Dashboard CurrencyCulture="es-MX"&gt;
+  &lt;Title Text="GALLINAS/MUERTES" /&gt;
+  &lt;DataSources&gt;
+    &lt;ObjectDataSource Name="Med Prev Veterinario" ComponentName="dashboardObjectDataSource1"&gt;
+      &lt;DataSource Type="System.Data.DataTable, System.Data, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089" /&gt;
+    &lt;/ObjectDataSource&gt;
+    &lt;ObjectDataSource Name="Sueldos y prestaciones" ComponentName="dashboardObjectDataSource2"&gt;
+      &lt;DataSource Type="System.Data.DataTable, System.Data, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089" /&gt;
+    &lt;/ObjectDataSource&gt;
+    &lt;ObjectDataSource Name="Gastos Directos" ComponentName="dashboardObjectDataSource3"&gt;
+      &lt;DataSource Type="System.Data.DataTable, System.Data, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089" /&gt;
+    &lt;/ObjectDataSource&gt;
+    &lt;ObjectDataSource Name="Material Venterinario" ComponentName="dashboardObjectDataSource4"&gt;
+      &lt;DataSource Type="System.Data.DataTable, System.Data, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089" /&gt;
+    &lt;/ObjectDataSource&gt;
+    &lt;ObjectDataSource Name="Alimento terminado y complementos" ComponentName="dashboardObjectDataSource5"&gt;
+      &lt;DataSource Type="System.Data.DataTable, System.Data, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089" /&gt;
+    &lt;/ObjectDataSource&gt;
+    &lt;ObjectDataSource Name="Recolleccion" ComponentName="dashboardObjectDataSource6"&gt;
+      &lt;DataSource Type="System.Data.DataTable, System.Data, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089" /&gt;
+    &lt;/ObjectDataSource&gt;
+    &lt;ObjectDataSource Name="Gallinas" ComponentName="dashboardObjectDataSource7"&gt;
+      &lt;DataSource Type="System.Data.DataTable, System.Data, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089" /&gt;
+    &lt;/ObjectDataSource&gt;
+    &lt;ObjectDataSource Name="Formulaciones" ComponentName="dashboardObjectDataSource8"&gt;
+      &lt;DataSource Type="System.Data.DataTable, System.Data, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089" /&gt;
+    &lt;/ObjectDataSource&gt;
+    &lt;ObjectDataSource Name="Muerte" ComponentName="dashboardObjectDataSource9"&gt;
+      &lt;DataSource Type="System.Data.DataTable, System.Data, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089" /&gt;
+    &lt;/ObjectDataSource&gt;
+    &lt;ObjectDataSource Name="Empaque" ComponentName="dashboardObjectDataSource10"&gt;
+      &lt;DataSource Type="System.Data.DataTable, System.Data, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089" /&gt;
+    &lt;/ObjectDataSource&gt;
+    &lt;ObjectDataSource Name="VentaRecoleccion" ComponentName="dashboardObjectDataSource11"&gt;
+      &lt;DataSource Type="System.Data.DataTable, System.Data, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089" /&gt;
+    &lt;/ObjectDataSource&gt;
+  &lt;/DataSources&gt;
+  &lt;Items&gt;
+    &lt;Pivot ComponentName="pivotDashboardItem1" Name="MUERTES" DataSource="dashboardObjectDataSource9"&gt;
+      &lt;DataItems&gt;
+        &lt;Measure DataMember="Cantidad" DefaultId="DataItem2"&gt;
+          &lt;NumericFormat FormatType="Number" Precision="0" Unit="Ones" IncludeGroupSeparator="true" /&gt;
+        &lt;/Measure&gt;
+        &lt;Dimension DataMember="Año" DefaultId="DataItem0"&gt;
+          &lt;NumericFormat FormatType="Number" Precision="0" Unit="Ones" /&gt;
+        &lt;/Dimension&gt;
+        &lt;Dimension DataMember="idBodega" DefaultId="DataItem1" /&gt;
+      &lt;/DataItems&gt;
+      &lt;Columns&gt;
+        &lt;Column DefaultId="DataItem1" /&gt;
+      &lt;/Columns&gt;
+      &lt;Rows&gt;
+        &lt;Row DefaultId="DataItem0" /&gt;
+      &lt;/Rows&gt;
+      &lt;Values&gt;
+        &lt;Value DefaultId="DataItem2" /&gt;
+      &lt;/Values&gt;
+    &lt;/Pivot&gt;
+    &lt;Pivot ComponentName="pivotDashboardItem2" Name="GALLINAS" DataSource="dashboardObjectDataSource7"&gt;
+      &lt;DataItems&gt;
+        &lt;Dimension DataMember="FechaEntrada" DefaultId="DataItem3" /&gt;
+        &lt;Measure DataMember="AlmacenDestino" SummaryType="Count" DefaultId="DataItem1" /&gt;
+        &lt;Dimension DataMember="idBodegaDestino" DefaultId="DataItem0" /&gt;
+      &lt;/DataItems&gt;
+      &lt;Columns&gt;
+        &lt;Column DefaultId="DataItem3" /&gt;
+      &lt;/Columns&gt;
+      &lt;Rows&gt;
+        &lt;Row DefaultId="DataItem0" /&gt;
+      &lt;/Rows&gt;
+      &lt;Values&gt;
+        &lt;Value DefaultId="DataItem1" /&gt;
+      &lt;/Values&gt;
+    &lt;/Pivot&gt;
+    &lt;Chart ComponentName="chartDashboardItem1" Name="MUERTES" DataSource="dashboardObjectDataSource9"&gt;
+      &lt;DataItems&gt;
+        &lt;Dimension DataMember="Año" DefaultId="DataItem0"&gt;
+          &lt;NumericFormat FormatType="Number" Precision="0" Unit="Ones" /&gt;
+        &lt;/Dimension&gt;
+        &lt;Measure DataMember="Cantidad" DefaultId="DataItem1"&gt;
+          &lt;NumericFormat FormatType="Number" Precision="0" Unit="Ones" IncludeGroupSeparator="true" /&gt;
+        &lt;/Measure&gt;
+        &lt;Dimension DataMember="idBodega" DefaultId="DataItem2" /&gt;
+      &lt;/DataItems&gt;
+      &lt;SeriesDimensions&gt;
+        &lt;SeriesDimension DefaultId="DataItem0" /&gt;
+      &lt;/SeriesDimensions&gt;
+      &lt;Arguments&gt;
+        &lt;Argument DefaultId="DataItem2" /&gt;
+      &lt;/Arguments&gt;
+      &lt;Panes&gt;
+        &lt;Pane Name="Panel 1"&gt;
+          &lt;Series&gt;
+            &lt;Simple&gt;
+              &lt;Value DefaultId="DataItem1" /&gt;
+            &lt;/Simple&gt;
+          &lt;/Series&gt;
+        &lt;/Pane&gt;
+      &lt;/Panes&gt;
+    &lt;/Chart&gt;
+  &lt;/Items&gt;
+  &lt;LayoutTree&gt;
+    &lt;LayoutGroup Weight="100"&gt;
+      &lt;LayoutItem DashboardItem="pivotDashboardItem2" Weight="51.690391459074732" /&gt;
+      &lt;LayoutGroup Orientation="Vertical" Weight="48.309608540925268"&gt;
+        &lt;LayoutItem DashboardItem="pivotDashboardItem1" Weight="50.082101806239734" /&gt;
+        &lt;LayoutItem DashboardItem="chartDashboardItem1" Weight="49.917898193760266" /&gt;
+      &lt;/LayoutGroup&gt;
+    &lt;/LayoutGroup&gt;
+  &lt;/LayoutTree&gt;
+&lt;/Dashboard&gt;</Layout>
+    </Output>
+    <Output xsi:type="OutputDashboard">
+      <Tipo>Dashboard</Tipo>
+      <Nombre>ALIMENTO Y FORMULACIONES</Nombre>
+      <id>cb0c374d-0e4f-4811-a1e9-a07b522f712a</id>
+      <Layout>&lt;?xml version="1.0" encoding="utf-8"?&gt;
+&lt;Dashboard CurrencyCulture="es-MX"&gt;
+  &lt;Title Text="ALIMENTOS TERMINADOS/FORMULACIONES" /&gt;
+  &lt;DataSources&gt;
+    &lt;ObjectDataSource Name="Med Prev Veterinario" ComponentName="dashboardObjectDataSource1" /&gt;
+    &lt;ObjectDataSource Name="Sueldos y prestaciones" ComponentName="dashboardObjectDataSource2" /&gt;
+    &lt;ObjectDataSource Name="Gastos Directos" ComponentName="dashboardObjectDataSource3" /&gt;
+    &lt;ObjectDataSource Name="Material Venterinario" ComponentName="dashboardObjectDataSource4" /&gt;
+    &lt;ObjectDataSource Name="Alimento terminado y complementos" ComponentName="dashboardObjectDataSource5" /&gt;
+    &lt;ObjectDataSource Name="Recolleccion" ComponentName="dashboardObjectDataSource6" /&gt;
+    &lt;ObjectDataSource Name="Gallinas" ComponentName="dashboardObjectDataSource7" /&gt;
+    &lt;ObjectDataSource Name="Formulaciones" ComponentName="dashboardObjectDataSource8" /&gt;
+    &lt;ObjectDataSource Name="Muerte" ComponentName="dashboardObjectDataSource9" /&gt;
+    &lt;ObjectDataSource Name="Empaque" ComponentName="dashboardObjectDataSource10" /&gt;
+    &lt;ObjectDataSource Name="VentaRecoleccion" ComponentName="dashboardObjectDataSource11" /&gt;
+  &lt;/DataSources&gt;
+  &lt;Items&gt;
+    &lt;Pivot ComponentName="pivotDashboardItem1" Name="ALIMENTO TERMINADO Y COMPLEMENTOS" DataSource="dashboardObjectDataSource5"&gt;
+      &lt;DataItems&gt;
+        &lt;Dimension DataMember="Año" DefaultId="DataItem0"&gt;
+          &lt;NumericFormat FormatType="Number" Precision="0" Unit="Ones" /&gt;
+        &lt;/Dimension&gt;
+        &lt;Measure DataMember="Costo" DefaultId="DataItem1"&gt;
+          &lt;NumericFormat FormatType="Number" Unit="Ones" IncludeGroupSeparator="true" /&gt;
+        &lt;/Measure&gt;
+        &lt;Dimension DataMember="Granja" DefaultId="DataItem2" /&gt;
+        &lt;Dimension DataMember="Capa" DefaultId="DataItem3" /&gt;
+      &lt;/DataItems&gt;
+      &lt;Columns&gt;
+        &lt;Column DefaultId="DataItem0" /&gt;
+      &lt;/Columns&gt;
+      &lt;Rows&gt;
+        &lt;Row DefaultId="DataItem2" /&gt;
+        &lt;Row DefaultId="DataItem3" /&gt;
+      &lt;/Rows&gt;
+      &lt;Values&gt;
+        &lt;Value DefaultId="DataItem1" /&gt;
+      &lt;/Values&gt;
+    &lt;/Pivot&gt;
+    &lt;Pivot ComponentName="pivotDashboardItem2" Name="FORMULACIONES" DataSource="dashboardObjectDataSource8"&gt;
+      &lt;DataItems&gt;
+        &lt;Dimension DataMember="Año" DefaultId="DataItem1"&gt;
+          &lt;NumericFormat FormatType="Number" Precision="0" Unit="Ones" /&gt;
+        &lt;/Dimension&gt;
+        &lt;Dimension DataMember="Almacen" DefaultId="DataItem0" /&gt;
+        &lt;Measure DataMember="Kilos alimento" DefaultId="DataItem2" /&gt;
+      &lt;/DataItems&gt;
+      &lt;Columns&gt;
+        &lt;Column DefaultId="DataItem1" /&gt;
+      &lt;/Columns&gt;
+      &lt;Rows&gt;
+        &lt;Row DefaultId="DataItem0" /&gt;
+      &lt;/Rows&gt;
+      &lt;Values&gt;
+        &lt;Value DefaultId="DataItem2" /&gt;
+      &lt;/Values&gt;
+    &lt;/Pivot&gt;
+    &lt;Chart ComponentName="chartDashboardItem1" Name="Gráfico 1" DataSource="dashboardObjectDataSource5"&gt;
+      &lt;DataItems&gt;
+        &lt;Dimension DataMember="Granja" DefaultId="DataItem1" /&gt;
+        &lt;Dimension DataMember="Año" DefaultId="DataItem2"&gt;
+          &lt;NumericFormat FormatType="Number" Precision="0" Unit="Ones" /&gt;
+        &lt;/Dimension&gt;
+        &lt;Measure DataMember="Costo" DefaultId="DataItem0"&gt;
+          &lt;NumericFormat FormatType="Number" Unit="Ones" IncludeGroupSeparator="true" /&gt;
+        &lt;/Measure&gt;
+      &lt;/DataItems&gt;
+      &lt;SeriesDimensions&gt;
+        &lt;SeriesDimension DefaultId="DataItem2" /&gt;
+      &lt;/SeriesDimensions&gt;
+      &lt;Arguments&gt;
+        &lt;Argument DefaultId="DataItem1" /&gt;
+      &lt;/Arguments&gt;
+      &lt;Panes&gt;
+        &lt;Pane Name="Panel 1"&gt;
+          &lt;Series&gt;
+            &lt;Simple&gt;
+              &lt;Value DefaultId="DataItem0" /&gt;
+            &lt;/Simple&gt;
+          &lt;/Series&gt;
+        &lt;/Pane&gt;
+      &lt;/Panes&gt;
+    &lt;/Chart&gt;
+  &lt;/Items&gt;
+  &lt;LayoutTree&gt;
+    &lt;LayoutGroup Weight="100"&gt;
+      &lt;LayoutGroup Orientation="Vertical" Weight="50"&gt;
+        &lt;LayoutItem DashboardItem="pivotDashboardItem1" Weight="49.917898193760266" /&gt;
+        &lt;LayoutItem DashboardItem="chartDashboardItem1" Weight="50.082101806239734" /&gt;
+      &lt;/LayoutGroup&gt;
+      &lt;LayoutItem DashboardItem="pivotDashboardItem2" Weight="50" /&gt;
+    &lt;/LayoutGroup&gt;
+  &lt;/LayoutTree&gt;
+&lt;/Dashboard&gt;</Layout>
+    </Output>
+    <Output xsi:type="OutputDashboard">
+      <Tipo>Dashboard</Tipo>
+      <Nombre>SUELDOS Y PRESTACIONES/ GASTOS DIRECTOS</Nombre>
+      <id>035d4c98-8d1c-4f5c-b3f8-c851c1c8e5f2</id>
+      <Layout>&lt;?xml version="1.0" encoding="utf-8"?&gt;
+&lt;Dashboard CurrencyCulture="es-MX"&gt;
+  &lt;Title Text="Sueldos y prestaciones/ Gastos directos" /&gt;
+  &lt;DataSources&gt;
+    &lt;ObjectDataSource Name="Med Prev Veterinario" ComponentName="dashboardObjectDataSource1"&gt;
+      &lt;DataSource Type="System.Data.DataTable, System.Data, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089" /&gt;
+    &lt;/ObjectDataSource&gt;
+    &lt;ObjectDataSource Name="Sueldos y prestaciones" ComponentName="dashboardObjectDataSource2"&gt;
+      &lt;DataSource Type="System.Data.DataTable, System.Data, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089" /&gt;
+    &lt;/ObjectDataSource&gt;
+    &lt;ObjectDataSource Name="Gastos Directos" ComponentName="dashboardObjectDataSource3"&gt;
+      &lt;DataSource Type="System.Data.DataTable, System.Data, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089" /&gt;
+    &lt;/ObjectDataSource&gt;
+    &lt;ObjectDataSource Name="Material Venterinario" ComponentName="dashboardObjectDataSource4"&gt;
+      &lt;DataSource Type="System.Data.DataTable, System.Data, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089" /&gt;
+    &lt;/ObjectDataSource&gt;
+    &lt;ObjectDataSource Name="Alimento terminado y complementos" ComponentName="dashboardObjectDataSource5"&gt;
+      &lt;DataSource Type="System.Data.DataTable, System.Data, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089" /&gt;
+    &lt;/ObjectDataSource&gt;
+    &lt;ObjectDataSource Name="Recolleccion" ComponentName="dashboardObjectDataSource6"&gt;
+      &lt;DataSource Type="System.Data.DataTable, System.Data, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089" /&gt;
+    &lt;/ObjectDataSource&gt;
+    &lt;ObjectDataSource Name="Gallinas" ComponentName="dashboardObjectDataSource7"&gt;
+      &lt;DataSource Type="System.Data.DataTable, System.Data, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089" /&gt;
+    &lt;/ObjectDataSource&gt;
+    &lt;ObjectDataSource Name="Formulaciones" ComponentName="dashboardObjectDataSource8"&gt;
+      &lt;DataSource Type="System.Data.DataTable, System.Data, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089" /&gt;
+    &lt;/ObjectDataSource&gt;
+    &lt;ObjectDataSource Name="Muerte" ComponentName="dashboardObjectDataSource9"&gt;
+      &lt;DataSource Type="System.Data.DataTable, System.Data, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089" /&gt;
+    &lt;/ObjectDataSource&gt;
+    &lt;ObjectDataSource Name="Empaque" ComponentName="dashboardObjectDataSource10"&gt;
+      &lt;DataSource Type="System.Data.DataTable, System.Data, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089" /&gt;
+    &lt;/ObjectDataSource&gt;
+    &lt;ObjectDataSource Name="VentaRecoleccion" ComponentName="dashboardObjectDataSource11"&gt;
+      &lt;DataSource Type="System.Data.DataTable, System.Data, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089" /&gt;
+    &lt;/ObjectDataSource&gt;
+  &lt;/DataSources&gt;
+  &lt;Items&gt;
+    &lt;Pivot ComponentName="pivotDashboardItem1" Name="SUELDOS Y PRESTACIONES" DataSource="dashboardObjectDataSource2"&gt;
+      &lt;DataItems&gt;
+        &lt;Dimension DataMember="Año" DefaultId="DataItem1"&gt;
+          &lt;NumericFormat FormatType="Number" Precision="0" Unit="Ones" /&gt;
+        &lt;/Dimension&gt;
+        &lt;Dimension DataMember="Granja" DefaultId="DataItem0" /&gt;
+        &lt;Measure DataMember="Column1" DefaultId="DataItem2"&gt;
+          &lt;NumericFormat FormatType="Number" Unit="Ones" IncludeGroupSeparator="true" /&gt;
+        &lt;/Measure&gt;
+      &lt;/DataItems&gt;
+      &lt;Columns&gt;
+        &lt;Column DefaultId="DataItem1" /&gt;
+      &lt;/Columns&gt;
+      &lt;Rows&gt;
+        &lt;Row DefaultId="DataItem0" /&gt;
+      &lt;/Rows&gt;
+      &lt;Values&gt;
+        &lt;Value DefaultId="DataItem2" /&gt;
+      &lt;/Values&gt;
+    &lt;/Pivot&gt;
+    &lt;Pivot ComponentName="pivotDashboardItem2" Name="GASTOS DIRECTOS" DataSource="dashboardObjectDataSource3"&gt;
+      &lt;DataItems&gt;
+        &lt;Dimension DataMember="Granja" DefaultId="DataItem0" /&gt;
+        &lt;Dimension DataMember="Año" DefaultId="DataItem1"&gt;
+          &lt;NumericFormat FormatType="Number" Precision="0" Unit="Ones" /&gt;
+        &lt;/Dimension&gt;
+        &lt;Measure DataMember="Column1" DefaultId="DataItem2"&gt;
+          &lt;NumericFormat FormatType="Number" Unit="Ones" IncludeGroupSeparator="true" /&gt;
+        &lt;/Measure&gt;
+      &lt;/DataItems&gt;
+      &lt;Columns&gt;
+        &lt;Column DefaultId="DataItem1" /&gt;
+      &lt;/Columns&gt;
+      &lt;Rows&gt;
+        &lt;Row DefaultId="DataItem0" /&gt;
+      &lt;/Rows&gt;
+      &lt;Values&gt;
+        &lt;Value DefaultId="DataItem2" /&gt;
+      &lt;/Values&gt;
+    &lt;/Pivot&gt;
+    &lt;Chart ComponentName="chartDashboardItem1" Name="SUELDOS Y PRESTACIONES" DataSource="dashboardObjectDataSource2"&gt;
+      &lt;DataItems&gt;
+        &lt;Measure DataMember="Column1" DefaultId="DataItem1"&gt;
+          &lt;NumericFormat FormatType="Number" Unit="Ones" IncludeGroupSeparator="true" /&gt;
+        &lt;/Measure&gt;
+        &lt;Dimension DataMember="Granja" DefaultId="DataItem0" /&gt;
+        &lt;Dimension DataMember="Año" DefaultId="DataItem2"&gt;
+          &lt;NumericFormat FormatType="Number" Precision="0" Unit="Ones" /&gt;
+        &lt;/Dimension&gt;
+      &lt;/DataItems&gt;
+      &lt;SeriesDimensions&gt;
+        &lt;SeriesDimension DefaultId="DataItem2" /&gt;
+      &lt;/SeriesDimensions&gt;
+      &lt;Arguments&gt;
+        &lt;Argument DefaultId="DataItem0" /&gt;
+      &lt;/Arguments&gt;
+      &lt;Panes&gt;
+        &lt;Pane Name="Panel 1"&gt;
+          &lt;Series&gt;
+            &lt;Simple&gt;
+              &lt;Value DefaultId="DataItem1" /&gt;
+            &lt;/Simple&gt;
+          &lt;/Series&gt;
+        &lt;/Pane&gt;
+      &lt;/Panes&gt;
+    &lt;/Chart&gt;
+    &lt;Chart ComponentName="chartDashboardItem2" Name="Gráfico 2" DataSource="dashboardObjectDataSource3"&gt;
+      &lt;DataItems&gt;
+        &lt;Dimension DataMember="Granja" DefaultId="DataItem0" /&gt;
+        &lt;Measure DataMember="Año" DefaultId="DataItem1"&gt;
+          &lt;NumericFormat FormatType="Number" Precision="0" Unit="Ones" /&gt;
+        &lt;/Measure&gt;
+        &lt;Dimension DataMember="Referencia" DefaultId="DataItem2" /&gt;
+      &lt;/DataItems&gt;
+      &lt;SeriesDimensions&gt;
+        &lt;SeriesDimension DefaultId="DataItem2" /&gt;
+      &lt;/SeriesDimensions&gt;
+      &lt;Arguments&gt;
+        &lt;Argument DefaultId="DataItem0" /&gt;
+      &lt;/Arguments&gt;
+      &lt;Panes&gt;
+        &lt;Pane Name="Panel 1"&gt;
+          &lt;Series&gt;
+            &lt;Simple&gt;
+              &lt;Value DefaultId="DataItem1" /&gt;
+            &lt;/Simple&gt;
+          &lt;/Series&gt;
+        &lt;/Pane&gt;
+      &lt;/Panes&gt;
+    &lt;/Chart&gt;
+  &lt;/Items&gt;
+  &lt;LayoutTree&gt;
+    &lt;LayoutGroup&gt;
+      &lt;LayoutGroup Orientation="Vertical" Weight="0.5"&gt;
+        &lt;LayoutItem DashboardItem="pivotDashboardItem1" Weight="0.5" /&gt;
+        &lt;LayoutItem DashboardItem="chartDashboardItem1" Weight="0.5" /&gt;
+      &lt;/LayoutGroup&gt;
+      &lt;LayoutGroup Orientation="Vertical" Weight="0.5"&gt;
+        &lt;LayoutItem DashboardItem="pivotDashboardItem2" Weight="0.5" /&gt;
+        &lt;LayoutItem DashboardItem="chartDashboardItem2" Weight="0.5" /&gt;
+      &lt;/LayoutGroup&gt;
+    &lt;/LayoutGroup&gt;
+  &lt;/LayoutTree&gt;
+&lt;/Dashboard&gt;</Layout>
+    </Output>
+    <Output xsi:type="OutputDashboard">
+      <Tipo>Dashboard</Tipo>
+      <Nombre>VENTARECOLECCION</Nombre>
+      <id>82e4601d-c8f7-4f6f-be72-5ed9eb17fbce</id>
+      <Layout>&lt;?xml version="1.0" encoding="utf-8"?&gt;
+&lt;Dashboard CurrencyCulture="es-MX"&gt;
+  &lt;Title Text="VENTA RECOLECTADOS " /&gt;
+  &lt;DataSources&gt;
+    &lt;ObjectDataSource Name="Med Prev Veterinario" ComponentName="dashboardObjectDataSource1"&gt;
+      &lt;DataSource Type="System.Data.DataTable, System.Data, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089" /&gt;
+    &lt;/ObjectDataSource&gt;
+    &lt;ObjectDataSource Name="Sueldos y prestaciones" ComponentName="dashboardObjectDataSource2"&gt;
+      &lt;DataSource Type="System.Data.DataTable, System.Data, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089" /&gt;
+    &lt;/ObjectDataSource&gt;
+    &lt;ObjectDataSource Name="Gastos Directos" ComponentName="dashboardObjectDataSource3"&gt;
+      &lt;DataSource Type="System.Data.DataTable, System.Data, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089" /&gt;
+    &lt;/ObjectDataSource&gt;
+    &lt;ObjectDataSource Name="Material Venterinario" ComponentName="dashboardObjectDataSource4"&gt;
+      &lt;DataSource Type="System.Data.DataTable, System.Data, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089" /&gt;
+    &lt;/ObjectDataSource&gt;
+    &lt;ObjectDataSource Name="Alimento terminado y complementos" ComponentName="dashboardObjectDataSource5"&gt;
+      &lt;DataSource Type="System.Data.DataTable, System.Data, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089" /&gt;
+    &lt;/ObjectDataSource&gt;
+    &lt;ObjectDataSource Name="Recolleccion" ComponentName="dashboardObjectDataSource6"&gt;
+      &lt;DataSource Type="System.Data.DataTable, System.Data, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089" /&gt;
+    &lt;/ObjectDataSource&gt;
+    &lt;ObjectDataSource Name="Gallinas" ComponentName="dashboardObjectDataSource7"&gt;
+      &lt;DataSource Type="System.Data.DataTable, System.Data, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089" /&gt;
+    &lt;/ObjectDataSource&gt;
+    &lt;ObjectDataSource Name="Formulaciones" ComponentName="dashboardObjectDataSource8"&gt;
+      &lt;DataSource Type="System.Data.DataTable, System.Data, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089" /&gt;
+    &lt;/ObjectDataSource&gt;
+    &lt;ObjectDataSource Name="Muerte" ComponentName="dashboardObjectDataSource9"&gt;
+      &lt;DataSource Type="System.Data.DataTable, System.Data, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089" /&gt;
+    &lt;/ObjectDataSource&gt;
+    &lt;ObjectDataSource Name="Empaque" ComponentName="dashboardObjectDataSource10"&gt;
+      &lt;DataSource Type="System.Data.DataTable, System.Data, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089" /&gt;
+    &lt;/ObjectDataSource&gt;
+    &lt;ObjectDataSource Name="VentaRecoleccion" ComponentName="dashboardObjectDataSource11"&gt;
+      &lt;DataSource Type="System.Data.DataTable, System.Data, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089" /&gt;
+    &lt;/ObjectDataSource&gt;
+  &lt;/DataSources&gt;
+  &lt;Items&gt;
+    &lt;Pivot ComponentName="pivotDashboardItem1" Name="VENTA RECOLECTADOS" DataSource="dashboardObjectDataSource11"&gt;
+      &lt;DataItems&gt;
+        &lt;Dimension DataMember="Año" DefaultId="DataItem0"&gt;
+          &lt;NumericFormat FormatType="Number" Precision="0" Unit="Ones" /&gt;
+        &lt;/Dimension&gt;
+        &lt;Dimension DataMember="Semana" DefaultId="DataItem2" /&gt;
+        &lt;Measure DataMember="KilosR" DefaultId="DataItem3"&gt;
+          &lt;NumericFormat FormatType="Number" Precision="0" Unit="Ones" IncludeGroupSeparator="true" /&gt;
+        &lt;/Measure&gt;
+        &lt;Measure DataMember="%Kilos Rec Vendidos" SummaryType="Average" DefaultId="DataItem1"&gt;
+          &lt;NumericFormat FormatType="Percent" Precision="0" Unit="Ones" IncludeGroupSeparator="true" /&gt;
+        &lt;/Measure&gt;
+        &lt;Measure DataMember="Cajas" DefaultId="DataItem4"&gt;
+          &lt;NumericFormat FormatType="Number" Precision="0" Unit="Ones" IncludeGroupSeparator="true" /&gt;
+        &lt;/Measure&gt;
+      &lt;/DataItems&gt;
+      &lt;Columns&gt;
+        &lt;Column DefaultId="DataItem0" /&gt;
+      &lt;/Columns&gt;
+      &lt;Rows&gt;
+        &lt;Row DefaultId="DataItem2" /&gt;
+      &lt;/Rows&gt;
+      &lt;Values&gt;
+        &lt;Value DefaultId="DataItem3" /&gt;
+        &lt;Value DefaultId="DataItem1" /&gt;
+        &lt;Value DefaultId="DataItem4" /&gt;
+      &lt;/Values&gt;
+    &lt;/Pivot&gt;
+  &lt;/Items&gt;
+  &lt;LayoutTree&gt;
+    &lt;LayoutGroup&gt;
+      &lt;LayoutItem DashboardItem="pivotDashboardItem1" /&gt;
+    &lt;/LayoutGroup&gt;
+  &lt;/LayoutTree&gt;
+&lt;/Dashboard&gt;</Layout>
+    </Output>
+  </Outputs>
+  <Relaciones />
+  <Parametros />
+=======
+      <Nombre>DashBoard</Nombre>
+      <id>fa9a452f-030a-41c4-89d1-ca4f2c1d02a0</id>
+>>>>>>> main
     </Output>
   </Outputs>
   <Relaciones />
@@ -2927,6 +3890,7 @@ AND G.Cantidad&gt;10</Sentencia>
       <AskForValue>true</AskForValue>
     </Parametro>
   </Parametros>
+>>>>>>> main
   <ParametrosFormDesign>
     <FormSize>
       <Width>0</Width>
@@ -2939,6 +3903,6 @@ AND G.Cantidad&gt;10</Sentencia>
   <ConfiguracionCorreo>
     <Correos />
   </ConfiguracionCorreo>
-  <FileName>C:\Users\Natasha GO\Desktop\Granja\Granja\GV\FINAL\KPIShuevo.nvf</FileName>
+  <FileName>C:\Users\liype\Documents\GranjaVolantin\Granja\GV\FINAL\KPIShuevo.nvf</FileName>
   <FileReadOnly>false</FileReadOnly>
 </Vision>

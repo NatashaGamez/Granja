@@ -1,0 +1,15 @@
+COMENTARIOS 
+-24 Y 25 DIAS DE DESTETE.
+-Agregar el costo de salida de: destete y engorda. (Reporteo)
+-Separar conversion por grafica por unidad de medida. (Màs visual y facil de detectar) Grafica de tablero 
+-Detectar tendencia mensual.
+-Monitorear las entregas  : salidas y entregas- Abrir el campo en siman (que en este pare el costo) "si el metodo es por transpaso que se habilite el area de kilos"
+-Agregar como indicador la merma de las entregas.
+
+
+COMENTARIOS JAIME
+Tenemos que ir
+-Llevaremos la lista de todo lo que se requiera agregar y modificar.
+-Llevar en la memoria todo lo que trabajamos.
+-Llevar la base de datos.
+

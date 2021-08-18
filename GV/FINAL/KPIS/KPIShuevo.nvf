@@ -1,0 +1,3094 @@
+<?xml version="1.0"?>
+<Vision xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema">
+  <Tablas>
+    <Tabla>
+      <HasChanges>false</HasChanges>
+      <id>7ced055c-2d47-4eaa-9b41-6bf7a732593b</id>
+      <idPadre>00000000-0000-0000-0000-000000000000</idPadre>
+      <Nombre>Recolleccion</Nombre>
+      <Sentencia>SELECT T.Almacen,T.FechaSemana, T.Semana AS 'Semana del Año', T.Año,  DATEDIFF(week,T.InicioPostura,T.FechaSemana) AS SemanaPostura, T.Gallinas, T.Cantidad AS 'Cantidad Huevos', T.Postura AS '% Postura', T.Cajas,
+	(ISNULL(T.GD,0) + ISNULL(T.SP,0) + ISNULL(T.F,0)  + ISNULL(T.CA,0) + ISNULL(T.MP,0) + ISNULL(T.MV,0)) AS 'Costo Total',
+	(ISNULL(T.GDxG,0) + ISNULL(T.SPxG,0) + ISNULL(T.FxG,0)  + ISNULL(T.CAxG,0) + ISNULL(T.MPxG,0) + ISNULL(T.MVxG,0)) AS 'Costo por Gallina',
+	T.Muertes,
+	T.Muertes*(ISNULL(T.GDxG,0) + ISNULL(T.SPxG,0) + ISNULL(T.FxG,0)  + ISNULL(T.CAxG,0) + ISNULL(T.MPxG,0) + ISNULL(T.MVxG,0)) AS 'Perdida por Muerte',
+	T.Mortalidad AS '% Mortalidad',
+	(ISNULL(T.GDxG,0) + ISNULL(T.SPxG,0) + ISNULL(T.FxG,0)  + ISNULL(T.CAxG,0) + ISNULL(T.MPxG,0) + ISNULL(T.MVxG,0))/nullif(T.Postura,0) AS 'Costo por %Podtura',
+	T.Kilos, T.KilosXCaja AS 'Kilos por Caja', T.KiloAlim AS 'Alimento Consumido', T.KiloAlim/nullif(T.Gallinas,0) AS 'Alimento por Gallina', 
+	T.ConvAlim AS 'Conversion Alimenticia',T.F AS 'Costo Alimento Consumido', T.CostoConvAlim AS 'Costo Conversion Alimenticia', T.FxG AS ' Costo Alimento por Gallina',
+	T.CA AS 'Complemto Alimenticio', T.CAxG AS 'Complemto Alimenticio por Gallina', 
+	T.MP AS 'Med Preventivo', T.MPxG AS 'Med Preventivo por Gallina',
+	T.MV AS 'Material Veterianrio', T.MVxG AS 'Mat Vet por Gallina',
+	T.GD AS 'Gastos Directos', T.GDxG AS 'Gastos Directos por Gallina',
+	T.SP AS 'Sueldos y Prestaciones',T.SPxG AS 'Sueldos y Pres por Gallinas'
+FROM -- Union de todo 
+	(SELECT RG.Almacen, RG.Semana, RG.Año, RG.FechaSemana, P.InicioPostura,
+	SUM(SUM(RG.Gallinas)) OVER(PARTITION BY RG.Almacen ORDER BY RG.Año, RG.Semana) AS Gallinas, RG.Kilos, RG.Cantidad,
+	NULLIF(RG.Cantidad,0)/NULLIF(SUM(SUM(RG.Gallinas)) OVER(PARTITION BY RG.Almacen ORDER BY RG.Año, RG.Semana),0) AS Postura,
+	NULLIF(RG.Kilos,0)/NULLIF(RG.Cajas,0) AS KilosXCaja	, RG.Cajas,
+	M.Cantidad AS Muertes, 
+	M.Cantidad/NULLIF(SUM(SUM(RG.Gallinas)) OVER(PARTITION BY RG.Almacen ORDER BY RG.Año, RG.Semana),0) AS Mortalidad,
+	F.Costo AS F, F.Kilos AS KiloAlim, F.Kilos/NULLIF(RG.Kilos,0) AS ConvAlim, F.Costo/NULLIF(RG.Kilos,0) AS CostoConvAlim,
+	F.Costo/NULLIF(SUM(SUM(RG.Gallinas)) OVER(PARTITION BY RG.Almacen ORDER BY RG.Año, RG.Semana),0) AS FxG,
+	GD.Costo AS GD, 
+	GD.Costo/NULLIF(SUM(SUM(RG.Gallinas)) OVER(PARTITION BY RG.Almacen ORDER BY RG.Año, RG.Semana),0) AS GDxG,
+	SP.Costo AS SP, 
+	SP.Costo/NULLIF(SUM(SUM(RG.Gallinas)) OVER(PARTITION BY RG.Almacen ORDER BY RG.Año, RG.Semana),0) AS SPxG,
+	AC.Costo AS CA, 
+	AC.Costo/NULLIF(SUM(SUM(RG.Gallinas)) OVER(PARTITION BY RG.Almacen ORDER BY RG.Año, RG.Semana),0) AS CAxG,
+	MP.Costo AS MP, 
+	MP.Costo/NULLIF(SUM(SUM(RG.Gallinas)) OVER(PARTITION BY RG.Almacen ORDER BY RG.Año, RG.Semana),0) AS MPxG,
+	MV.Costo AS MV, 
+	MV.Costo/NULLIF(SUM(SUM(RG.Gallinas)) OVER(PARTITION BY RG.Almacen ORDER BY RG.Año, RG.Semana),0) AS MVxG
+		FROM -- Union recoleccion y gallinas 
+		(SELECT CASE WHEN Re.Almacen IS NULL THEN EG.idBodega ELSE Re.Almacen END AS Almacen,
+			CASE WHEN Re.Semana IS NULL THEN EG.Semana ELSE Re.Semana END AS Semana,
+			CASE WHEN Re.Año IS NULL THEN EG.Año ELSE RE.Año END AS Año, 
+			Re.Kilos, Re.Cantidad, Re.Cajas, Re.FechaSemana,  
+			CASE WHEN EG.Gallinas IS NULL THEN 0 ELSE EG.Gallinas END AS Gallinas
+			FROM -- Recoleccion Huevo
+				(SELECT R.idBodegaOrigen AS Almacen, DATEPART(week,R.Fecha) AS Semana, DATEPART(year,R.Fecha) AS Año,
+					MAX(R.Fecha) AS FechaSemana,
+					Sum(R.Cantidad) AS Cantidad,
+					Sum(R.NoCajas) AS Cajas, SUM(R.Peso) AS Kilos
+				FROM vol.gridTraspasosCorral R 
+				WHERE R.Descripcion LIKE 'Huevo%'
+				GROUP BY  R.idBodegaOrigen, DATEPART(week,R.Fecha), DATEPART(year,R.Fecha)) AS Re
+			FULL OUTER JOIN -- Existencia Gallinas
+				(SELECT G.idBodega, DATEPART(week, G.Fecha) AS Semana, DATEPART(year, G.Fecha) AS Año, 
+				SUM(G.Cantidad) AS Gallinas
+					FROM dbo.gridMovimientosInventario G
+					WHERE G.Codigo = '9006' AND G.idBodega LIKE 'A%'
+				GROUP BY G.idBodega,DATEPART(week,G.Fecha),DATEPART(year,G.Fecha)) AS EG
+			ON Re.Almacen = EG.idBodega AND Re.Semana = EG. Semana AND Re.Año = EG.Año
+			GROUP BY Re.Almacen, Re.Semana, Re.Año, Re.Kilos, Re.Cantidad,
+			RE.Cajas, EG.Gallinas, EG.idBodega, EG.Semana, EG.Año,Re.FechaSemana) AS RG
+	LEFT JOIN -- Medicamento Preventivo Veterinario
+		(SELECT mvp.idBodega AS Granja, 
+		DATEPART(week, MVP.Fecha) AS Semana, DATEPART(year, MVP.Fecha) AS Año,
+		SUM(MVP.Costo)*-1 AS Costo 
+			FROM dbo.gridMovimientosInventario MVP
+			WHERE MVP.TipoMovimiento = 'Salida por traspaso de corral' AND MVP.NombreLinea = 'Medicamento Preventivo Veterinario' 
+				AND mvp.idBodega LIKE 'ASJP%' AND mvp.EntradaSalida = 'S'
+		GROUP BY mvp.idBodega, DATEPART(week, MVP.Fecha), DATEPART(year, MVP.Fecha)) AS MP
+	ON RG.Almacen = MP.Granja AND RG.Semana = MP.semana AND RG.Año = MP.Año
+	LEFT JOIN --Formulaciones
+		(SELECT A.idBodega AS Almacen, DATEPART(WEEK,A.Fecha) AS Semana,
+		DATEPART(year,A.Fecha) AS Año, 
+		SUM(CASE A.Unidad WHEN 'TON' THEN A.Cantidad*-907.185 ELSE A.Cantidad*-1 END) AS Kilos,
+		SUM(A.Costo)*-1 AS Costo
+		FROM dbo.gridMovimientosInventario A
+		WHERE A.TipoMovimiento = 'Salida por traspaso de corral' 
+				AND A.NombreLinea = 'Formulaciones' AND A.idBodega LIKE 'AS%'
+		GROUP BY a.idBodega,DATEPART(WEEK,A.Fecha), DATEPART(year,A.Fecha)) AS F
+	ON RG.Almacen = F.Almacen AND RG.Semana = F.Semana AND RG.Año = F.Año
+	LEFT JOIN --Material Veterinario
+		(SELECT mvp.idBodega AS Granja, DATEPART(week, MVP.Fecha) AS Semana, DATEPART(year, MVP.Fecha) AS Año,
+		SUM(MVP.Costo)*-1 AS Costo 
+			FROM dbo.gridMovimientosInventario MVP
+			WHERE MVP.TipoMovimiento = 'Salida por traspaso de corral' AND MVP.NombreLinea = 'Material  Medico Veterinario'
+				AND mvp.idBodega LIKE 'ASJP%' AND mvp.EntradaSalida = 'S'
+		GROUP BY mvp.idBodega, mvp.Referencia, DATEPART(week, MVP.Fecha),DATEPART(year, MVP.Fecha)) AS MV
+	ON RG.Almacen = MV.Granja AND RG.Semana = MV.semana AND RG.Año = MV.Año
+	LEFT JOIN -- Alimento Terminado y Complementos Alimenticios
+		(SELECT mvp.idBodega AS Granja, DATEPART(week, MVP.Fecha) AS Semana, DATEPART(year, MVP.Fecha) AS Año,
+		SUM(MVP.Costo)*-1 AS Costo 
+			FROM dbo.gridMovimientosInventario MVP
+			WHERE MVP.TipoMovimiento = 'Salida por traspaso de corral' AND MVP.NombreLinea = 'Alimento Terminado y Complementos Alimenticios'
+				AND mvp.idBodega LIKE 'ASJP%' AND mvp.EntradaSalida = 'S'
+		GROUP BY mvp.idBodega, DATEPART(week, MVP.Fecha), DATEPART(year, MVP.Fecha)) AS AC
+	ON RG.Almacen = AC.Granja AND RG.Semana = AC.semana AND RG.Año = AC.Año
+	LEFT JOIN --Muertes
+		(SELECT  G.idBodega ,DATEPART(week,G.Fecha) AS Semana, DATEPART(year,G.Fecha) AS Año,
+		Sum(G.Cantidad)*-1 AS Cantidad
+		FROM dbo.gridMovimientosInventario G
+		WHERE g.Codigo = '9006' AND G.TipoMovimiento = 'Salida por muerte animal'
+		GROUP BY G.idBodega, DATEPART(week,G.Fecha), DATEPART(year,G.Fecha)) AS M
+	ON RG.Almacen = M.idBodega AND RG.Semana = M.Semana AND RG.Año = M.Año
+	LEFT JOIN -- Gastos Directos
+		(SELECT G.idBodega AS Granja,  DATEPART(WEEK,G.Fecha) AS Semana, DATEPART(YEAR,G.Fecha) AS Año,
+		SUM(G.Costo)*-1 AS Costo
+			FROM dbo.gridMovimientosInventario G
+			WHERE G.TipoMovimiento = 'Gasto en corral' AND g.NombreLinea = 'Gastos Directos' 
+				AND G.idBodega LIKE 'AS%'  
+		GROUP BY G.idBodega, DATEPART(WEEK,G.Fecha), DATEPART(YEAR,G.Fecha)) AS GD
+	ON RG.Almacen = GD.Granja AND RG.Semana = GD.semana AND RG.Año = GD.Año
+	LEFT JOIN --Sueldos y Prestaciones
+		(SELECT G.idBodega AS Granja, DATEPART(WEEK,G.Fecha) AS Semana, SUM(G.Costo)*-1 AS Costo, 
+			DATEPART(YEAR,G.Fecha) AS Año
+			FROM dbo.gridMovimientosInventario G
+			WHERE G.TipoMovimiento = 'Gasto en corral' AND g.NombreLinea = 'Sueldos y Prestaciones' 
+				AND G.idBodega LIKE 'ASJP%'  
+		GROUP BY G.idBodega,DATEPART(WEEK,G.Fecha), DATEPART(YEAR,G.Fecha)) AS SP
+	ON RG.Almacen = SP.Granja AND RG.Semana = SP.semana AND RG.Año = SP.Año
+	LEFT JOIN --Entrada a postura
+		(SELECT G.idBodega AS Almacen, MAX(G.Fecha) AS InicioPostura
+		FROM dbo.gridMovimientosInventario G 
+		WHERE G.TipoMovimiento = 'Entrada por Nacimiento' AND G.Codigo = '9006'
+			AND G.Cantidad&gt;10
+		GROUP BY  G.idBodega) AS P
+	ON RG.Almacen = P.Almacen
+GROUP BY RG.Almacen, RG.Semana, RG.Año, RG.Kilos,RG.Cantidad,RG.Cajas,MP.Costo,F.Costo,
+			F.Kilos, MV.Costo, AC.Costo, M.Cantidad,GD.Costo,SP.Costo,RG.FechaSemana,P.InicioPostura) AS T
+GROUP BY T.Almacen,T.Semana,T.Año, T.Gallinas, T.Muertes,T.FechaSemana, T.InicioPostura,
+	T.Mortalidad, T.Postura, T.KilosXCaja,T.F, T.ConvAlim, T.FxG,
+	T.CA, T.CAxG, T.MP, T.MPxG, T.MV, T.MVxG, T.GD, T.GDxG, T.SP,T.SPxG,T.Kilos, T.Cantidad,T.Postura,T.Cajas, T.KiloAlim,T.CostoConvAlim
+HAVING  T.FechaSemana &gt;= @FechaInicio AND T.FechaSemana &lt;= @FechaFinal</Sentencia>
+    </Tabla>
+    <Tabla>
+      <HasChanges>false</HasChanges>
+      <id>a0eba31c-a554-4ab4-b941-98938aefeda4</id>
+      <idPadre>00000000-0000-0000-0000-000000000000</idPadre>
+      <Nombre>VentaRecoleccion</Nombre>
+      <Sentencia>SELECT V.FechaSemana, V.Semana, V.Año, V.Cajas, V.Kilos,  V.Kilos/V.Cajas AS 'Peso Caja Vendida',
+	V.Venta, V.Costo, V.Venta/V.Kilos AS Precio, V.Costo/V.Kilos AS CostoKilo, RE.Cajas,
+	 RE.KilosR, V.Kilos/RE.KilosR AS '%Kilos Rec Vendidos', RE.PesoCajaR AS 'Peso Caja Recolectada',
+	V.Kilos/RE.KilosR*7 AS 'Dias Rec Vendidos', E.Costo AS 'Costo Empaque',
+E.Costo/NULLIF(V.Cajas,0) AS 'Cosot Empaque por Caja Vendidas'
+FROM -- Venta Huevo 
+(SELECT datepart(week,F.Fecha) AS Semana, datepart(year,F.Fecha) AS Año,
+SUM(Try_cast(F.Kilos AS FLOAT)) AS Cajas, MAX(F.Fecha) AS FechaSemana,
+SUM(F.Cantidad)*-1 AS Kilos, SUM(F.Venta)*-1 AS Venta,
+SUM(F.Costo)*-1 AS Costo 
+	FROM dbo.gridMovimientosInventario F
+WHERE (F.TipoMovimiento = 'Salida por facturación' OR F.TipoMovimiento = 'Cancelación') 
+		AND F.NombreLinea = 'Huevo' AND F.Codigo = '9010'
+GROUP BY datepart(week,F.Fecha), datepart(year,F.Fecha)) AS V
+	LEFT JOIN -- Recoleccion Huevo
+( SELECT datepart(week,R.Fecha) AS Week, 
+datepart(year,R.Fecha) AS Year, SUM(R.Peso) AS KilosR, SUM(R.NoCajas) AS Cajas,
+SUM(R.Peso)/NULLIF(SUM(R.NoCajas),0) AS PesoCajaR
+		FROM vol.gridTraspasosCorral R 
+		WHERE R.Descripcion LIKE 'Huevo%'
+GROUP BY datepart(week,R.Fecha), datepart(year,R.Fecha)) AS RE
+		ON V.Semana = RE.Week AND V.Año = RE.Year
+	LEFT JOIN -- Empaque
+(SELECT E.idBodega AS Almacen, Datepart(week,E.Fecha) AS Semana,
+Datepart(year,E.Fecha) AS Año ,SUM(E.Costo) AS Costo 
+		FROM dbo.gridMovimientosInventario E
+		WHERE E.TipoMovimiento = 'Traspaso de almacén' 
+			AND E.NombreLinea = 'Empaques y embalajes'
+			AND E.EntradaSalida = 'E'
+			AND E.NombreCategoria = 'Aves'
+			AND E.idBodega LIKE 'AS%'
+GROUP BY E.idBodega, Datepart(week,E.Fecha), Datepart(year,E.Fecha)) AS E
+	ON V.Semana = E.Semana AND V.Año = E.Año
+GROUP BY V.FechaSemana, V.Semana, V.Año, V.Cajas, V.Kilos, V.Venta, V.Costo, RE.KilosR, E.Costo,RE.PesoCajaR, RE.Cajas
+HAVING V.FechaSemana &gt;= @FechaInicio AND V.FechaSemana &lt;= @FechaFinal
+</Sentencia>
+    </Tabla>
+    <Tabla>
+      <HasChanges>false</HasChanges>
+      <id>b220d27d-956c-433b-aedc-0978cc0bb15d</id>
+      <idPadre>00000000-0000-0000-0000-000000000000</idPadre>
+      <Nombre>Pollitas</Nombre>
+      <Sentencia>SELECT P.idBodega AS Almacen, GD.Semana, GD.Año, P.Cantidad AS 'Gallinas Inicio Postura',P.Costo/NULLIF(P.Cantidad,0) AS 'Costo Incio Postura', GD.Costo/NULLIF(P.Cantidad,0) AS 'Gastos Directos', SP.Costo/NULLIF(P.Cantidad,0) AS 'Sueldos y Salarios',
+	F.Kilos/NULLIF(P.Cantidad,0) AS Alimento, F.Costo/NULLIF(P.Cantidad,0)  AS 'Costo Alimento', AC.Costo/NULLIF(P.Cantidad,0)  AS 'Costo Complemento Alimentario',
+	MP.Costo/NULLIF(P.Cantidad,0)  AS 'Costo Medicamento Preventivo', MV.Costo/NULLIF(P.Cantidad,0) AS 'Costo Material Veterinario' FROM 
+		(SELECT G.idBodega AS Almacen,  DATEPART(WEEK,G.Fecha) AS Semana, DATEPART(YEAR,G.Fecha) AS Año,
+		SUM(G.Costo)*-1 AS Costo, MAX(G.Fecha) AS FechaSemana
+	FROM dbo.gridMovimientosInventario G
+	WHERE G.TipoMovimiento = 'Gasto en corral' AND g.NombreLinea = 'Gastos Directos' 
+		AND G.idBodega LIKE 'AVICRE%'  
+	GROUP BY G.idBodega, DATEPART(WEEK,G.Fecha), DATEPART(YEAR,G.Fecha)) AS GD
+LEFT JOIN --Sueldos y Prestaciones
+(SELECT G.idBodega AS Granja, DATEPART(WEEK,G.Fecha) AS Semana, SUM(G.Costo)*-1 AS Costo, 
+DATEPART(YEAR,G.Fecha) AS Año
+			FROM dbo.gridMovimientosInventario G
+			WHERE G.TipoMovimiento = 'Gasto en corral' AND g.NombreLinea = 'Sueldos y Prestaciones' 
+				AND G.idBodega LIKE 'AVICRE%'  
+GROUP BY G.idBodega,DATEPART(WEEK,G.Fecha), DATEPART(YEAR,G.Fecha)) AS SP
+ON GD.Almacen = SP.Granja AND GD.Semana = SP.Semana AND GD.Año = SP.Año
+LEFT JOIN -- Medicamento Preventivo Veterinario
+(SELECT mvp.idBodega AS Granja, 
+DATEPART(week, MVP.Fecha) AS Semana, DATEPART(year, MVP.Fecha) AS Año,
+SUM(MVP.Costo)*-1 AS Costo 
+			FROM dbo.gridMovimientosInventario MVP
+			WHERE MVP.TipoMovimiento = 'Salida por traspaso de corral' AND MVP.NombreLinea = 'Medicamento Preventivo Veterinario' 
+				AND mvp.idBodega LIKE 'AVICRE%' AND mvp.EntradaSalida = 'S'
+GROUP BY mvp.idBodega, DATEPART(week, MVP.Fecha), DATEPART(year, MVP.Fecha)) AS MP
+	ON GD.Almacen = MP.Granja AND GD.Semana = MP.Semana AND GD.Año = MP.Año
+	LEFT JOIN --Formulaciones
+(SELECT A.idBodega AS Almacen, DATEPART(WEEK,A.Fecha) AS Semana,
+DATEPART(year,A.Fecha) AS Año, 
+SUM(CASE A.Unidad WHEN 'TON' THEN A.Cantidad*-907.185 ELSE A.Cantidad*-1 END) AS Kilos,
+SUM(A.Costo)*-1 AS Costo
+		FROM dbo.gridMovimientosInventario A
+		WHERE A.TipoMovimiento = 'Salida por traspaso de corral' 
+				AND A.NombreLinea = 'Formulaciones' AND A.idBodega LIKE 'AVICRE%'
+GROUP BY a.idBodega,DATEPART(WEEK,A.Fecha), DATEPART(year,A.Fecha)) AS F
+	ON GD.Almacen = F.Almacen AND GD.Semana = F.Semana AND GD.Año = F.Año
+	LEFT JOIN --Material Veterinario
+(SELECT mvp.idBodega AS Granja, DATEPART(week, MVP.Fecha) AS Semana, DATEPART(year, MVP.Fecha) AS Año,
+SUM(MVP.Costo)*-1 AS Costo 
+			FROM dbo.gridMovimientosInventario MVP
+			WHERE MVP.TipoMovimiento = 'Salida por traspaso de corral' AND MVP.NombreLinea = 'Material  Medico Veterinario'
+				AND mvp.idBodega LIKE 'AVICRE%' AND mvp.EntradaSalida = 'S'
+GROUP BY mvp.idBodega, mvp.Referencia, DATEPART(week, MVP.Fecha),DATEPART(year, MVP.Fecha)) AS MV
+	ON GD.Almacen = MV.Granja AND GD.Semana = MV.Semana AND GD.Año = MV.Año
+	LEFT JOIN -- Alimento Terminado y Complementos Alimenticios
+(SELECT mvp.idBodega AS Granja, DATEPART(week, MVP.Fecha) AS Semana, DATEPART(year, MVP.Fecha) AS Año,
+SUM(MVP.Costo)*-1 AS Costo 
+			FROM dbo.gridMovimientosInventario MVP
+			WHERE MVP.TipoMovimiento = 'Salida por traspaso de corral' AND MVP.NombreLinea = 'Alimento Terminado y Complementos Alimenticios'
+				AND mvp.idBodega LIKE 'AVICRE%' AND mvp.EntradaSalida = 'S'
+GROUP BY mvp.idBodega, DATEPART(week, MVP.Fecha), DATEPART(year, MVP.Fecha)) AS AC
+	ON GD.Almacen = AC.Granja AND GD.Semana = AC.semana AND GD.Año = AC.Año
+LEFT JOIN 
+(SELECT G.idBodega, DATEPART(WEEK,G.Fecha) AS Semana, DATEPART(YEAR,G.Fecha) AS Año, G.Cantidad, G.Costo,
+	G.CostoUnitario AS 'Costo por Gallina',g.Referencia
+	 FROM dbo.gridMovimientosInventario AS G 
+	WHERE G.TipoMovimiento = 'Entrada por Nacimiento' AND G.Codigo = '9006'
+	AND G.Cantidad&gt;10) AS P
+	ON GD.Semana = P.Semana  AND GD.Año = P.Año
+WHERE GD.FechaSemana &gt;= @FechaInicio AND GD.FechaSemana &lt;= @FechaFinal
+
+
+	</Sentencia>
+    </Tabla>
+  </Tablas>
+  <Outputs>
+    <Output xsi:type="OutputDashboard">
+      <Tipo>Dashboard</Tipo>
+      <Nombre>Tablero Huevo</Nombre>
+      <id>b313d434-021f-48cd-8a6e-8c25362c6f1d</id>
+      <Layout>&lt;?xml version="1.0" encoding="utf-8"?&gt;
+&lt;Dashboard CurrencyCulture="es-MX"&gt;
+  &lt;Title Text="Tablero Huevo" /&gt;
+  &lt;DataSources&gt;
+    &lt;ObjectDataSource Name="Recolleccion" ComponentName="dashboardObjectDataSource1"&gt;
+      &lt;DataSource Type="System.Data.DataTable, System.Data, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089" /&gt;
+    &lt;/ObjectDataSource&gt;
+    &lt;ObjectDataSource Name="VentaRecoleccion" ComponentName="dashboardObjectDataSource2"&gt;
+      &lt;DataSource Type="System.Data.DataTable, System.Data, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089" /&gt;
+    &lt;/ObjectDataSource&gt;
+    &lt;ObjectDataSource Name="Pollitas" ComponentName="dashboardObjectDataSource3"&gt;
+      &lt;DataSource Type="System.Data.DataTable, System.Data, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089" /&gt;
+    &lt;/ObjectDataSource&gt;
+  &lt;/DataSources&gt;
+  &lt;Items&gt;
+    &lt;Chart ComponentName="chartDashboardItem1" Name="Venta y Recolección" DataSource="dashboardObjectDataSource2"&gt;
+      &lt;ColoringOptions UseGlobalColors="false" /&gt;
+      &lt;InteractivityOptions MasterFilterMode="Multiple" IsDrillDownEnabled="true" /&gt;
+      &lt;DataItems&gt;
+        &lt;Dimension DataMember="Semana" DefaultId="DataItem0" /&gt;
+        &lt;Dimension DataMember="Año" DefaultId="DataItem1" /&gt;
+        &lt;Measure DataMember="Kilos" DefaultId="DataItem2" /&gt;
+        &lt;Measure DataMember="KilosR" DefaultId="DataItem3" /&gt;
+        &lt;Measure DataMember="Precio" DefaultId="DataItem4" /&gt;
+        &lt;Measure DataMember="CostoKilo" DefaultId="DataItem5" /&gt;
+        &lt;Measure DataMember="Peso Caja Vendida" DefaultId="DataItem8" /&gt;
+        &lt;Measure DataMember="Peso Caja Recolectada" DefaultId="DataItem9" /&gt;
+        &lt;Measure DataMember="Cajas" DefaultId="DataItem10" /&gt;
+        &lt;Measure DataMember="Cajas1" DefaultId="DataItem11" /&gt;
+        &lt;Measure DataMember="Costo" DefaultId="DataItem6" /&gt;
+        &lt;Measure DataMember="Venta" DefaultId="DataItem7" /&gt;
+      &lt;/DataItems&gt;
+      &lt;Arguments&gt;
+        &lt;Argument DefaultId="DataItem0" /&gt;
+        &lt;Argument DefaultId="DataItem1" /&gt;
+      &lt;/Arguments&gt;
+      &lt;ColorScheme&gt;
+        &lt;Entry DataSource="dashboardObjectDataSource2" PaletteIndex="1"&gt;
+          &lt;MeasureKey&gt;
+            &lt;Definition DataMember="Costo" /&gt;
+          &lt;/MeasureKey&gt;
+        &lt;/Entry&gt;
+        &lt;Entry DataSource="dashboardObjectDataSource2" PaletteIndex="17"&gt;
+          &lt;MeasureKey&gt;
+            &lt;Definition DataMember="Kilos" /&gt;
+          &lt;/MeasureKey&gt;
+        &lt;/Entry&gt;
+        &lt;Entry DataSource="dashboardObjectDataSource2" Color="-7190102"&gt;
+          &lt;MeasureKey&gt;
+            &lt;Definition DataMember="KilosR" /&gt;
+          &lt;/MeasureKey&gt;
+        &lt;/Entry&gt;
+        &lt;Entry DataSource="dashboardObjectDataSource2" Color="-2767264"&gt;
+          &lt;MeasureKey&gt;
+            &lt;Definition DataMember="Peso Caja Vendida" /&gt;
+          &lt;/MeasureKey&gt;
+        &lt;/Entry&gt;
+        &lt;Entry DataSource="dashboardObjectDataSource2" Color="-12730783"&gt;
+          &lt;MeasureKey&gt;
+            &lt;Definition DataMember="Precio" /&gt;
+          &lt;/MeasureKey&gt;
+        &lt;/Entry&gt;
+        &lt;Entry DataSource="dashboardObjectDataSource2" Color="-11818926"&gt;
+          &lt;MeasureKey&gt;
+            &lt;Definition DataMember="Venta" /&gt;
+          &lt;/MeasureKey&gt;
+        &lt;/Entry&gt;
+        &lt;Entry DataSource="dashboardObjectDataSource2" Color="-3136725"&gt;
+          &lt;MeasureKey&gt;
+            &lt;Definition DataMember="CostoKilo" /&gt;
+          &lt;/MeasureKey&gt;
+        &lt;/Entry&gt;
+      &lt;/ColorScheme&gt;
+      &lt;Panes&gt;
+        &lt;Pane Name="Panel 1"&gt;
+          &lt;AxisY Title="Kilos"&gt;
+            &lt;NumericFormat FormatType="Number" Unit="Ones" IncludeGroupSeparator="true" /&gt;
+          &lt;/AxisY&gt;
+          &lt;Series&gt;
+            &lt;Simple Name="Kilos Vendidos"&gt;
+              &lt;Value DefaultId="DataItem2" /&gt;
+            &lt;/Simple&gt;
+            &lt;Simple Name="Kilos Recolectar"&gt;
+              &lt;Value DefaultId="DataItem3" /&gt;
+            &lt;/Simple&gt;
+          &lt;/Series&gt;
+        &lt;/Pane&gt;
+        &lt;Pane Name="Panel 2"&gt;
+          &lt;AxisY Title="Cajas"&gt;
+            &lt;NumericFormat FormatType="Number" Unit="Ones" IncludeGroupSeparator="true" /&gt;
+          &lt;/AxisY&gt;
+          &lt;Series&gt;
+            &lt;Simple Name="Cajas Vendidas"&gt;
+              &lt;Value DefaultId="DataItem10" /&gt;
+            &lt;/Simple&gt;
+            &lt;Simple Name="Cajas Recolectadas"&gt;
+              &lt;Value DefaultId="DataItem11" /&gt;
+            &lt;/Simple&gt;
+          &lt;/Series&gt;
+        &lt;/Pane&gt;
+        &lt;Pane Name="Panel 3"&gt;
+          &lt;AxisY Title="$ - Kilos"&gt;
+            &lt;NumericFormat FormatType="Number" Unit="Ones" IncludeGroupSeparator="true" /&gt;
+          &lt;/AxisY&gt;
+          &lt;Series&gt;
+            &lt;Simple Name="Precio Kilo"&gt;
+              &lt;Value DefaultId="DataItem4" /&gt;
+            &lt;/Simple&gt;
+            &lt;Simple Name="Costo Kilo"&gt;
+              &lt;Value DefaultId="DataItem5" /&gt;
+            &lt;/Simple&gt;
+            &lt;Simple Name="Peso Caja Vendida"&gt;
+              &lt;Value DefaultId="DataItem8" /&gt;
+            &lt;/Simple&gt;
+            &lt;Simple Name="Peso Caja Recolectada"&gt;
+              &lt;Value DefaultId="DataItem9" /&gt;
+            &lt;/Simple&gt;
+          &lt;/Series&gt;
+        &lt;/Pane&gt;
+        &lt;Pane Name="Panel 4"&gt;
+          &lt;AxisY Title="$"&gt;
+            &lt;NumericFormat FormatType="Number" Unit="Ones" IncludeGroupSeparator="true" /&gt;
+          &lt;/AxisY&gt;
+          &lt;Series&gt;
+            &lt;Simple Name="Costo "&gt;
+              &lt;Value DefaultId="DataItem6" /&gt;
+            &lt;/Simple&gt;
+            &lt;Simple Name="Venta "&gt;
+              &lt;Value DefaultId="DataItem7" /&gt;
+            &lt;/Simple&gt;
+          &lt;/Series&gt;
+        &lt;/Pane&gt;
+      &lt;/Panes&gt;
+      &lt;ChartLegend InsidePosition="TopLeftHorizontal" OutsidePosition="TopRightVertical" /&gt;
+      &lt;AxisX TitleVisible="true" Title="Semana del Año" EnableZooming="true" LimitVisiblePoints="true" VisiblePointsCount="6" /&gt;
+    &lt;/Chart&gt;
+    &lt;Pie ComponentName="pieDashboardItem1" Name="Gallinas en Postura" DataSource="dashboardObjectDataSource1" LabelContentType="ArgumentAndValue"&gt;
+      &lt;InteractivityOptions MasterFilterMode="Multiple" IsDrillDownEnabled="true" TargetDimensions="Series" /&gt;
+      &lt;DataItems&gt;
+        &lt;Measure DataMember="Gallinas" Name="Gallinas Vivas" DefaultId="DataItem1"&gt;
+          &lt;NumericFormat FormatType="Number" Precision="0" Unit="Ones" IncludeGroupSeparator="true" /&gt;
+        &lt;/Measure&gt;
+        &lt;Dimension DataMember="Almacen" DefaultId="DataItem0" /&gt;
+        &lt;Dimension DataMember="Semana del Año" DefaultId="DataItem2"&gt;
+          &lt;NumericFormat FormatType="Number" Precision="0" Unit="Ones" IncludeGroupSeparator="true" /&gt;
+        &lt;/Dimension&gt;
+        &lt;Dimension DataMember="Año" DefaultId="DataItem3"&gt;
+          &lt;NumericFormat FormatType="Number" Precision="0" Unit="Ones" /&gt;
+        &lt;/Dimension&gt;
+      &lt;/DataItems&gt;
+      &lt;SeriesDimensions&gt;
+        &lt;SeriesDimension DefaultId="DataItem2" /&gt;
+        &lt;SeriesDimension DefaultId="DataItem3" /&gt;
+      &lt;/SeriesDimensions&gt;
+      &lt;Arguments&gt;
+        &lt;Argument DefaultId="DataItem0" /&gt;
+      &lt;/Arguments&gt;
+      &lt;Values&gt;
+        &lt;Value DefaultId="DataItem1" /&gt;
+      &lt;/Values&gt;
+    &lt;/Pie&gt;
+    &lt;Card ComponentName="cardDashboardItem1" Name="Recolección" DataSource="dashboardObjectDataSource1"&gt;
+      &lt;InteractivityOptions MasterFilterMode="Multiple" /&gt;
+      &lt;DataItems&gt;
+        &lt;Measure DataMember="Costo Total" DefaultId="DataItem2"&gt;
+          &lt;NumericFormat FormatType="Currency" Unit="Ones" IncludeGroupSeparator="true" CurrencyCultureName="es-MX" /&gt;
+        &lt;/Measure&gt;
+        &lt;Measure DataMember="Costo por Gallina" DefaultId="DataItem3"&gt;
+          &lt;NumericFormat FormatType="Currency" Unit="Ones" IncludeGroupSeparator="true" CurrencyCultureName="es-MX" /&gt;
+        &lt;/Measure&gt;
+        &lt;Dimension DataMember="Almacen" DefaultId="DataItem4" /&gt;
+        &lt;Measure DataMember="Alimento Consumido" DefaultId="DataItem0"&gt;
+          &lt;NumericFormat FormatType="Number" Unit="Ones" IncludeGroupSeparator="true" /&gt;
+        &lt;/Measure&gt;
+        &lt;Measure DataMember="Alimento por Gallina" DefaultId="DataItem1"&gt;
+          &lt;NumericFormat FormatType="Number" Unit="Ones" IncludeGroupSeparator="true" /&gt;
+        &lt;/Measure&gt;
+        &lt;Measure DataMember="Conversion Alimenticia" SummaryType="Average" DefaultId="DataItem5" /&gt;
+        &lt;Measure DataMember="Costo Alimento Consumido" DefaultId="DataItem7"&gt;
+          &lt;NumericFormat FormatType="Currency" Unit="Ones" IncludeGroupSeparator="true" CurrencyCultureName="es-MX" /&gt;
+        &lt;/Measure&gt;
+        &lt;Measure DataMember=" Costo Alimento por Gallina" DefaultId="DataItem8"&gt;
+          &lt;NumericFormat FormatType="Currency" Unit="Ones" IncludeGroupSeparator="true" CurrencyCultureName="es-MX" /&gt;
+        &lt;/Measure&gt;
+        &lt;Measure DataMember="Costo Conversion Alimenticia" SummaryType="Average" DefaultId="DataItem9"&gt;
+          &lt;NumericFormat FormatType="Currency" Unit="Ones" IncludeGroupSeparator="true" CurrencyCultureName="es-MX" /&gt;
+        &lt;/Measure&gt;
+        &lt;Measure DataMember="Gastos Directos" DefaultId="DataItem10"&gt;
+          &lt;NumericFormat FormatType="Currency" Unit="Ones" IncludeGroupSeparator="true" CurrencyCultureName="es-MX" /&gt;
+        &lt;/Measure&gt;
+        &lt;Measure DataMember="Gastos Directos por Gallina" DefaultId="DataItem11"&gt;
+          &lt;NumericFormat FormatType="Currency" Unit="Ones" IncludeGroupSeparator="true" CurrencyCultureName="es-MX" /&gt;
+        &lt;/Measure&gt;
+        &lt;Measure DataMember="Sueldos y Prestaciones" DefaultId="DataItem12"&gt;
+          &lt;NumericFormat FormatType="Currency" Unit="Ones" IncludeGroupSeparator="true" CurrencyCultureName="es-MX" /&gt;
+        &lt;/Measure&gt;
+        &lt;Measure DataMember="Sueldos y Pres por Gallinas" DefaultId="DataItem13"&gt;
+          &lt;NumericFormat FormatType="Currency" Unit="Ones" IncludeGroupSeparator="true" CurrencyCultureName="es-MX" /&gt;
+        &lt;/Measure&gt;
+        &lt;Measure DataMember="Kilos" DefaultId="DataItem6"&gt;
+          &lt;NumericFormat FormatType="Number" Unit="Ones" IncludeGroupSeparator="true" /&gt;
+        &lt;/Measure&gt;
+        &lt;Measure DataMember="Cajas" DefaultId="DataItem14"&gt;
+          &lt;NumericFormat FormatType="Number" Precision="0" Unit="Ones" IncludeGroupSeparator="true" /&gt;
+        &lt;/Measure&gt;
+        &lt;Measure DataMember="Kilos por Caja" DefaultId="DataItem15"&gt;
+          &lt;NumericFormat FormatType="Number" Unit="Ones" IncludeGroupSeparator="true" /&gt;
+        &lt;/Measure&gt;
+      &lt;/DataItems&gt;
+      &lt;SeriesDimensions&gt;
+        &lt;SeriesDimension DefaultId="DataItem4" /&gt;
+      &lt;/SeriesDimensions&gt;
+      &lt;Card Name="Cajas Recolectadas"&gt;
+        &lt;ActualValue DefaultId="DataItem14" /&gt;
+        &lt;AbsoluteVariationNumericFormat /&gt;
+        &lt;PercentVariationNumericFormat /&gt;
+        &lt;PercentOfTargetNumericFormat /&gt;
+        &lt;LayoutTemplate MinWidth="100" MaxWidth="150" Type="Lightweight"&gt;
+          &lt;MainValue Visible="true" ValueType="ActualValue" DimensionIndex="0" /&gt;
+          &lt;SubValue Visible="true" ValueType="Title" DimensionIndex="0" /&gt;
+          &lt;BottomValue Visible="true" ValueType="Subtitle" DimensionIndex="0" /&gt;
+          &lt;DeltaIndicator Visible="false" /&gt;
+          &lt;Sparkline Visible="false" /&gt;
+        &lt;/LayoutTemplate&gt;
+      &lt;/Card&gt;
+      &lt;Card Name="Kilos Recolectados"&gt;
+        &lt;ActualValue DefaultId="DataItem6" /&gt;
+        &lt;AbsoluteVariationNumericFormat /&gt;
+        &lt;PercentVariationNumericFormat /&gt;
+        &lt;PercentOfTargetNumericFormat /&gt;
+        &lt;LayoutTemplate MinWidth="100" MaxWidth="150" Type="Lightweight"&gt;
+          &lt;MainValue Visible="true" ValueType="ActualValue" DimensionIndex="0" /&gt;
+          &lt;SubValue Visible="true" ValueType="Title" DimensionIndex="0" /&gt;
+          &lt;BottomValue Visible="true" ValueType="Subtitle" DimensionIndex="0" /&gt;
+          &lt;DeltaIndicator Visible="false" /&gt;
+          &lt;Sparkline Visible="false" /&gt;
+        &lt;/LayoutTemplate&gt;
+      &lt;/Card&gt;
+      &lt;Card Name="Kilos por Caja recolectada"&gt;
+        &lt;ActualValue DefaultId="DataItem15" /&gt;
+        &lt;AbsoluteVariationNumericFormat /&gt;
+        &lt;PercentVariationNumericFormat /&gt;
+        &lt;PercentOfTargetNumericFormat /&gt;
+        &lt;LayoutTemplate MinWidth="100" MaxWidth="150" Type="Lightweight"&gt;
+          &lt;MainValue Visible="true" ValueType="ActualValue" DimensionIndex="0" /&gt;
+          &lt;SubValue Visible="true" ValueType="Title" DimensionIndex="0" /&gt;
+          &lt;BottomValue Visible="true" ValueType="Subtitle" DimensionIndex="0" /&gt;
+          &lt;DeltaIndicator Visible="false" /&gt;
+          &lt;Sparkline Visible="false" /&gt;
+        &lt;/LayoutTemplate&gt;
+      &lt;/Card&gt;
+      &lt;Card Name="Costo Total"&gt;
+        &lt;ActualValue DefaultId="DataItem2" /&gt;
+        &lt;AbsoluteVariationNumericFormat /&gt;
+        &lt;PercentVariationNumericFormat /&gt;
+        &lt;PercentOfTargetNumericFormat /&gt;
+        &lt;LayoutTemplate MinWidth="100" MaxWidth="150" Type="Lightweight"&gt;
+          &lt;MainValue Visible="true" ValueType="ActualValue" DimensionIndex="0" /&gt;
+          &lt;SubValue Visible="true" ValueType="Title" DimensionIndex="0" /&gt;
+          &lt;BottomValue Visible="true" ValueType="Subtitle" DimensionIndex="0" /&gt;
+          &lt;DeltaIndicator Visible="false" /&gt;
+          &lt;Sparkline Visible="false" /&gt;
+        &lt;/LayoutTemplate&gt;
+      &lt;/Card&gt;
+      &lt;Card Name="Costo por Gallina"&gt;
+        &lt;ActualValue DefaultId="DataItem3" /&gt;
+        &lt;AbsoluteVariationNumericFormat /&gt;
+        &lt;PercentVariationNumericFormat /&gt;
+        &lt;PercentOfTargetNumericFormat /&gt;
+        &lt;LayoutTemplate MinWidth="100" MaxWidth="150" Type="Lightweight"&gt;
+          &lt;MainValue Visible="true" ValueType="ActualValue" DimensionIndex="0" /&gt;
+          &lt;SubValue Visible="true" ValueType="Title" DimensionIndex="0" /&gt;
+          &lt;BottomValue Visible="true" ValueType="Subtitle" DimensionIndex="0" /&gt;
+          &lt;DeltaIndicator Visible="false" /&gt;
+          &lt;Sparkline Visible="false" /&gt;
+        &lt;/LayoutTemplate&gt;
+      &lt;/Card&gt;
+      &lt;Card Name="Alimento Consumido"&gt;
+        &lt;ActualValue DefaultId="DataItem0" /&gt;
+        &lt;AbsoluteVariationNumericFormat /&gt;
+        &lt;PercentVariationNumericFormat /&gt;
+        &lt;PercentOfTargetNumericFormat /&gt;
+        &lt;LayoutTemplate MinWidth="100" MaxWidth="150" Type="Lightweight"&gt;
+          &lt;MainValue Visible="true" ValueType="ActualValue" DimensionIndex="0" /&gt;
+          &lt;SubValue Visible="true" ValueType="Title" DimensionIndex="0" /&gt;
+          &lt;BottomValue Visible="true" ValueType="Subtitle" DimensionIndex="0" /&gt;
+          &lt;DeltaIndicator Visible="false" /&gt;
+          &lt;Sparkline Visible="false" /&gt;
+        &lt;/LayoutTemplate&gt;
+      &lt;/Card&gt;
+      &lt;Card Name="Alimento por Gallina"&gt;
+        &lt;ActualValue DefaultId="DataItem1" /&gt;
+        &lt;AbsoluteVariationNumericFormat /&gt;
+        &lt;PercentVariationNumericFormat /&gt;
+        &lt;PercentOfTargetNumericFormat /&gt;
+        &lt;LayoutTemplate MinWidth="100" MaxWidth="150" Type="Lightweight"&gt;
+          &lt;MainValue Visible="true" ValueType="ActualValue" DimensionIndex="0" /&gt;
+          &lt;SubValue Visible="true" ValueType="Title" DimensionIndex="0" /&gt;
+          &lt;BottomValue Visible="true" ValueType="Subtitle" DimensionIndex="0" /&gt;
+          &lt;DeltaIndicator Visible="false" /&gt;
+          &lt;Sparkline Visible="false" /&gt;
+        &lt;/LayoutTemplate&gt;
+      &lt;/Card&gt;
+      &lt;Card Name="Conversion Alimenticia"&gt;
+        &lt;ActualValue DefaultId="DataItem5" /&gt;
+        &lt;AbsoluteVariationNumericFormat /&gt;
+        &lt;PercentVariationNumericFormat /&gt;
+        &lt;PercentOfTargetNumericFormat /&gt;
+        &lt;LayoutTemplate MinWidth="100" MaxWidth="150" Type="Lightweight"&gt;
+          &lt;MainValue Visible="true" ValueType="ActualValue" DimensionIndex="0" /&gt;
+          &lt;SubValue Visible="true" ValueType="Title" DimensionIndex="0" /&gt;
+          &lt;BottomValue Visible="true" ValueType="Subtitle" DimensionIndex="0" /&gt;
+          &lt;DeltaIndicator Visible="false" /&gt;
+          &lt;Sparkline Visible="false" /&gt;
+        &lt;/LayoutTemplate&gt;
+      &lt;/Card&gt;
+      &lt;Card Name="Costo Alimento Consumido"&gt;
+        &lt;ActualValue DefaultId="DataItem7" /&gt;
+        &lt;AbsoluteVariationNumericFormat /&gt;
+        &lt;PercentVariationNumericFormat /&gt;
+        &lt;PercentOfTargetNumericFormat /&gt;
+        &lt;LayoutTemplate MinWidth="100" MaxWidth="150" Type="Lightweight"&gt;
+          &lt;MainValue Visible="true" ValueType="ActualValue" DimensionIndex="0" /&gt;
+          &lt;SubValue Visible="true" ValueType="Title" DimensionIndex="0" /&gt;
+          &lt;BottomValue Visible="true" ValueType="Subtitle" DimensionIndex="0" /&gt;
+          &lt;DeltaIndicator Visible="false" /&gt;
+          &lt;Sparkline Visible="false" /&gt;
+        &lt;/LayoutTemplate&gt;
+      &lt;/Card&gt;
+      &lt;Card Name="Costo Alimento por Gallina"&gt;
+        &lt;ActualValue DefaultId="DataItem8" /&gt;
+        &lt;AbsoluteVariationNumericFormat /&gt;
+        &lt;PercentVariationNumericFormat /&gt;
+        &lt;PercentOfTargetNumericFormat /&gt;
+        &lt;LayoutTemplate MinWidth="100" MaxWidth="150" Type="Lightweight"&gt;
+          &lt;MainValue Visible="true" ValueType="ActualValue" DimensionIndex="0" /&gt;
+          &lt;SubValue Visible="true" ValueType="Title" DimensionIndex="0" /&gt;
+          &lt;BottomValue Visible="true" ValueType="Subtitle" DimensionIndex="0" /&gt;
+          &lt;DeltaIndicator Visible="false" /&gt;
+          &lt;Sparkline Visible="false" /&gt;
+        &lt;/LayoutTemplate&gt;
+      &lt;/Card&gt;
+      &lt;Card Name="Costo Conversion Alimenticia"&gt;
+        &lt;ActualValue DefaultId="DataItem9" /&gt;
+        &lt;AbsoluteVariationNumericFormat /&gt;
+        &lt;PercentVariationNumericFormat /&gt;
+        &lt;PercentOfTargetNumericFormat /&gt;
+        &lt;LayoutTemplate MinWidth="100" MaxWidth="150" Type="Lightweight"&gt;
+          &lt;MainValue Visible="true" ValueType="ActualValue" DimensionIndex="0" /&gt;
+          &lt;SubValue Visible="true" ValueType="Title" DimensionIndex="0" /&gt;
+          &lt;BottomValue Visible="true" ValueType="Subtitle" DimensionIndex="0" /&gt;
+          &lt;DeltaIndicator Visible="false" /&gt;
+          &lt;Sparkline Visible="false" /&gt;
+        &lt;/LayoutTemplate&gt;
+      &lt;/Card&gt;
+      &lt;Card Name="Gastos Directos"&gt;
+        &lt;ActualValue DefaultId="DataItem10" /&gt;
+        &lt;AbsoluteVariationNumericFormat /&gt;
+        &lt;PercentVariationNumericFormat /&gt;
+        &lt;PercentOfTargetNumericFormat /&gt;
+        &lt;LayoutTemplate MinWidth="100" MaxWidth="150" Type="Lightweight"&gt;
+          &lt;MainValue Visible="true" ValueType="ActualValue" DimensionIndex="0" /&gt;
+          &lt;SubValue Visible="true" ValueType="Title" DimensionIndex="0" /&gt;
+          &lt;BottomValue Visible="true" ValueType="Subtitle" DimensionIndex="0" /&gt;
+          &lt;DeltaIndicator Visible="false" /&gt;
+          &lt;Sparkline Visible="false" /&gt;
+        &lt;/LayoutTemplate&gt;
+      &lt;/Card&gt;
+      &lt;Card Name="Gastos Directos por Gallina"&gt;
+        &lt;ActualValue DefaultId="DataItem11" /&gt;
+        &lt;AbsoluteVariationNumericFormat /&gt;
+        &lt;PercentVariationNumericFormat /&gt;
+        &lt;PercentOfTargetNumericFormat /&gt;
+        &lt;LayoutTemplate MinWidth="100" MaxWidth="150" Type="Lightweight"&gt;
+          &lt;MainValue Visible="true" ValueType="ActualValue" DimensionIndex="0" /&gt;
+          &lt;SubValue Visible="true" ValueType="Title" DimensionIndex="0" /&gt;
+          &lt;BottomValue Visible="true" ValueType="Subtitle" DimensionIndex="0" /&gt;
+          &lt;DeltaIndicator Visible="false" /&gt;
+          &lt;Sparkline Visible="false" /&gt;
+        &lt;/LayoutTemplate&gt;
+      &lt;/Card&gt;
+      &lt;Card Name="Sueldos y Prestaciones"&gt;
+        &lt;ActualValue DefaultId="DataItem12" /&gt;
+        &lt;AbsoluteVariationNumericFormat /&gt;
+        &lt;PercentVariationNumericFormat /&gt;
+        &lt;PercentOfTargetNumericFormat /&gt;
+        &lt;LayoutTemplate MinWidth="100" MaxWidth="150" Type="Lightweight"&gt;
+          &lt;MainValue Visible="true" ValueType="ActualValue" DimensionIndex="0" /&gt;
+          &lt;SubValue Visible="true" ValueType="Title" DimensionIndex="0" /&gt;
+          &lt;BottomValue Visible="true" ValueType="Subtitle" DimensionIndex="0" /&gt;
+          &lt;DeltaIndicator Visible="false" /&gt;
+          &lt;Sparkline Visible="false" /&gt;
+        &lt;/LayoutTemplate&gt;
+      &lt;/Card&gt;
+      &lt;Card Name="Sueldos y Pres por Gallinas"&gt;
+        &lt;ActualValue DefaultId="DataItem13" /&gt;
+        &lt;AbsoluteVariationNumericFormat /&gt;
+        &lt;PercentVariationNumericFormat /&gt;
+        &lt;PercentOfTargetNumericFormat /&gt;
+        &lt;LayoutTemplate MinWidth="100" MaxWidth="150" Type="Lightweight"&gt;
+          &lt;MainValue Visible="true" ValueType="ActualValue" DimensionIndex="0" /&gt;
+          &lt;SubValue Visible="true" ValueType="Title" DimensionIndex="0" /&gt;
+          &lt;BottomValue Visible="true" ValueType="Subtitle" DimensionIndex="0" /&gt;
+          &lt;DeltaIndicator Visible="false" /&gt;
+          &lt;Sparkline Visible="false" /&gt;
+        &lt;/LayoutTemplate&gt;
+      &lt;/Card&gt;
+    &lt;/Card&gt;
+    &lt;Grid ComponentName="gridDashboardItem1" Name="Muertes" DataSource="dashboardObjectDataSource1"&gt;
+      &lt;InteractivityOptions MasterFilterMode="Multiple" IsDrillDownEnabled="true" /&gt;
+      &lt;DataItems&gt;
+        &lt;Dimension DataMember="Almacen" DefaultId="DataItem0" /&gt;
+        &lt;Measure DataMember="Muertes" DefaultId="DataItem1" /&gt;
+        &lt;Measure DataMember="Perdida por Muerte" DefaultId="DataItem2" /&gt;
+      &lt;/DataItems&gt;
+      &lt;GridColumns&gt;
+        &lt;GridDimensionColumn Weight="47.435897435897438"&gt;
+          &lt;Dimension DefaultId="DataItem0" /&gt;
+        &lt;/GridDimensionColumn&gt;
+        &lt;GridMeasureColumn Name="Muertes" Weight="71.15384615384616"&gt;
+          &lt;Measure DefaultId="DataItem1" /&gt;
+        &lt;/GridMeasureColumn&gt;
+        &lt;GridMeasureColumn Name="Perdida por Muerte" Weight="106.41025641025641"&gt;
+          &lt;Measure DefaultId="DataItem2" /&gt;
+        &lt;/GridMeasureColumn&gt;
+      &lt;/GridColumns&gt;
+      &lt;GridOptions EnableBandedRows="true" /&gt;
+    &lt;/Grid&gt;
+  &lt;/Items&gt;
+  &lt;LayoutTree&gt;
+    &lt;LayoutGroup Weight="100"&gt;
+      &lt;LayoutGroup Orientation="Vertical" Weight="48.271889400921658"&gt;
+        &lt;LayoutItem DashboardItem="chartDashboardItem1" Weight="64.327485380116954" /&gt;
+        &lt;LayoutItem DashboardItem="pieDashboardItem1" Weight="35.672514619883039" /&gt;
+      &lt;/LayoutGroup&gt;
+      &lt;LayoutGroup Orientation="Vertical" Weight="51.728110599078342"&gt;
+        &lt;LayoutItem DashboardItem="cardDashboardItem1" Weight="65.302144249512665" /&gt;
+        &lt;LayoutItem DashboardItem="gridDashboardItem1" Weight="34.697855750487328" /&gt;
+      &lt;/LayoutGroup&gt;
+    &lt;/LayoutGroup&gt;
+  &lt;/LayoutTree&gt;
+&lt;/Dashboard&gt;</Layout>
+    </Output>
+    <Output xsi:type="OutputGrid">
+      <Tipo>Grid</Tipo>
+      <Nombre>VENTA RECOLECCION </Nombre>
+      <id>13a785f0-a53a-4132-b464-f2073c528b2e</id>
+      <Layout>&lt;XtraSerializer version="1.0" application="View"&gt;
+  &lt;property name="#LayoutVersion" /&gt;
+  &lt;property name="#LayoutScaleFactor"&gt;@1,Width=1@1,Height=1&lt;/property&gt;
+  &lt;property name="OptionsBehavior" isnull="true" iskey="true"&gt;
+    &lt;property name="AllowAddRows"&gt;False&lt;/property&gt;
+    &lt;property name="Editable"&gt;false&lt;/property&gt;
+  &lt;/property&gt;
+  &lt;property name="OptionsSelection" isnull="true" iskey="true"&gt;
+    &lt;property name="EnableAppearanceFocusedCell"&gt;false&lt;/property&gt;
+    &lt;property name="MultiSelect"&gt;true&lt;/property&gt;
+  &lt;/property&gt;
+  &lt;property name="OptionsView" isnull="true" iskey="true"&gt;
+    &lt;property name="ShowAutoFilterRow"&gt;true&lt;/property&gt;
+    &lt;property name="ShowFooter"&gt;true&lt;/property&gt;
+    &lt;property name="ShowIndicator"&gt;false&lt;/property&gt;
+    &lt;property name="EnableAppearanceOddRow"&gt;true&lt;/property&gt;
+    &lt;property name="EnableAppearanceEvenRow"&gt;true&lt;/property&gt;
+  &lt;/property&gt;
+  &lt;property name="OptionsMenu" isnull="true" iskey="true"&gt;
+    &lt;property name="ShowConditionalFormattingItem"&gt;true&lt;/property&gt;
+  &lt;/property&gt;
+  &lt;property name="FixedLineWidth"&gt;2&lt;/property&gt;
+  &lt;property name="IndicatorWidth"&gt;-1&lt;/property&gt;
+  &lt;property name="ColumnPanelRowHeight"&gt;-1&lt;/property&gt;
+  &lt;property name="RowSeparatorHeight"&gt;0&lt;/property&gt;
+  &lt;property name="FooterPanelHeight"&gt;-1&lt;/property&gt;
+  &lt;property name="HorzScrollVisibility"&gt;Auto&lt;/property&gt;
+  &lt;property name="VertScrollVisibility"&gt;Auto&lt;/property&gt;
+  &lt;property name="RowHeight"&gt;-1&lt;/property&gt;
+  &lt;property name="GroupRowHeight"&gt;-1&lt;/property&gt;
+  &lt;property name="GroupFormat"&gt;{0}: [#image]{1} {2}&lt;/property&gt;
+  &lt;property name="ChildGridLevelName" /&gt;
+  &lt;property name="VertScrollTipFieldName" /&gt;
+  &lt;property name="PreviewFieldName" /&gt;
+  &lt;property name="GroupPanelText"&gt;Arrastre una columna para agrupar&lt;/property&gt;
+  &lt;property name="NewItemRowText" /&gt;
+  &lt;property name="LevelIndent"&gt;-1&lt;/property&gt;
+  &lt;property name="PreviewIndent"&gt;-1&lt;/property&gt;
+  &lt;property name="PreviewLineCount"&gt;-1&lt;/property&gt;
+  &lt;property name="ScrollStyle"&gt;LiveVertScroll, LiveHorzScroll&lt;/property&gt;
+  &lt;property name="FocusRectStyle"&gt;CellFocus&lt;/property&gt;
+  &lt;property name="HorzScrollStep"&gt;0&lt;/property&gt;
+  &lt;property name="ActiveFilterEnabled"&gt;true&lt;/property&gt;
+  &lt;property name="ViewCaptionHeight"&gt;-1&lt;/property&gt;
+  &lt;property name="Columns" iskey="true" value="13"&gt;
+    &lt;property name="Item1" isnull="true" iskey="true"&gt;
+      &lt;property name="Name"&gt;colSemana&lt;/property&gt;
+      &lt;property name="Caption"&gt;Semana&lt;/property&gt;
+      &lt;property name="ImageAlignment"&gt;Near&lt;/property&gt;
+      &lt;property name="ImageIndex"&gt;-1&lt;/property&gt;
+      &lt;property name="FieldName"&gt;Semana&lt;/property&gt;
+      &lt;property name="ColumnEditName" /&gt;
+      &lt;property name="VisibleIndex"&gt;0&lt;/property&gt;
+      &lt;property name="Visible"&gt;true&lt;/property&gt;
+      &lt;property name="Width"&gt;75&lt;/property&gt;
+      &lt;property name="DisplayFormat" isnull="true" iskey="true"&gt;
+        &lt;property name="FormatString"&gt;###,##0&lt;/property&gt;
+        &lt;property name="FormatType"&gt;Numeric&lt;/property&gt;
+      &lt;/property&gt;
+      &lt;property name="MinWidth"&gt;20&lt;/property&gt;
+      &lt;property name="MaxWidth"&gt;0&lt;/property&gt;
+    &lt;/property&gt;
+    &lt;property name="Item2" isnull="true" iskey="true"&gt;
+      &lt;property name="Name"&gt;colAño&lt;/property&gt;
+      &lt;property name="Caption"&gt;Año&lt;/property&gt;
+      &lt;property name="ImageAlignment"&gt;Near&lt;/property&gt;
+      &lt;property name="ImageIndex"&gt;-1&lt;/property&gt;
+      &lt;property name="FieldName"&gt;Año&lt;/property&gt;
+      &lt;property name="ColumnEditName" /&gt;
+      &lt;property name="VisibleIndex"&gt;1&lt;/property&gt;
+      &lt;property name="Visible"&gt;true&lt;/property&gt;
+      &lt;property name="Width"&gt;75&lt;/property&gt;
+      &lt;property name="DisplayFormat" isnull="true" iskey="true"&gt;
+        &lt;property name="FormatString"&gt;###,##0&lt;/property&gt;
+        &lt;property name="FormatType"&gt;Numeric&lt;/property&gt;
+      &lt;/property&gt;
+      &lt;property name="MinWidth"&gt;20&lt;/property&gt;
+      &lt;property name="MaxWidth"&gt;0&lt;/property&gt;
+    &lt;/property&gt;
+    &lt;property name="Item3" isnull="true" iskey="true"&gt;
+      &lt;property name="Name"&gt;colCajas&lt;/property&gt;
+      &lt;property name="Caption"&gt;Cajas&lt;/property&gt;
+      &lt;property name="ImageAlignment"&gt;Near&lt;/property&gt;
+      &lt;property name="ImageIndex"&gt;-1&lt;/property&gt;
+      &lt;property name="FieldName"&gt;Cajas&lt;/property&gt;
+      &lt;property name="ColumnEditName" /&gt;
+      &lt;property name="Width"&gt;75&lt;/property&gt;
+      &lt;property name="DisplayFormat" isnull="true" iskey="true"&gt;
+        &lt;property name="FormatString"&gt;###,##0&lt;/property&gt;
+        &lt;property name="FormatType"&gt;Numeric&lt;/property&gt;
+      &lt;/property&gt;
+      &lt;property name="MinWidth"&gt;20&lt;/property&gt;
+      &lt;property name="MaxWidth"&gt;0&lt;/property&gt;
+      &lt;property name="Summary" iskey="true" value="1"&gt;
+        &lt;property name="Item1" isnull="true" iskey="true"&gt;
+          &lt;property name="Tag" isnull="true" /&gt;
+          &lt;property name="FieldName"&gt;Cajas&lt;/property&gt;
+          &lt;property name="SummaryType"&gt;Sum&lt;/property&gt;
+          &lt;property name="DisplayFormat"&gt;{0:###,##0}&lt;/property&gt;
+        &lt;/property&gt;
+      &lt;/property&gt;
+    &lt;/property&gt;
+    &lt;property name="Item4" isnull="true" iskey="true"&gt;
+      &lt;property name="Name"&gt;colKilos&lt;/property&gt;
+      &lt;property name="Caption"&gt;Kilos&lt;/property&gt;
+      &lt;property name="ImageAlignment"&gt;Near&lt;/property&gt;
+      &lt;property name="ImageIndex"&gt;-1&lt;/property&gt;
+      &lt;property name="FieldName"&gt;Kilos&lt;/property&gt;
+      &lt;property name="ColumnEditName" /&gt;
+      &lt;property name="Width"&gt;75&lt;/property&gt;
+      &lt;property name="DisplayFormat" isnull="true" iskey="true"&gt;
+        &lt;property name="FormatString"&gt;N&lt;/property&gt;
+        &lt;property name="FormatType"&gt;Numeric&lt;/property&gt;
+      &lt;/property&gt;
+      &lt;property name="MinWidth"&gt;20&lt;/property&gt;
+      &lt;property name="MaxWidth"&gt;0&lt;/property&gt;
+      &lt;property name="Summary" iskey="true" value="1"&gt;
+        &lt;property name="Item1" isnull="true" iskey="true"&gt;
+          &lt;property name="Tag" isnull="true" /&gt;
+          &lt;property name="FieldName"&gt;Kilos&lt;/property&gt;
+          &lt;property name="SummaryType"&gt;Sum&lt;/property&gt;
+          &lt;property name="DisplayFormat"&gt;{0:N}&lt;/property&gt;
+        &lt;/property&gt;
+      &lt;/property&gt;
+    &lt;/property&gt;
+    &lt;property name="Item5" isnull="true" iskey="true"&gt;
+      &lt;property name="Name"&gt;colPeso Caja Vendida&lt;/property&gt;
+      &lt;property name="Caption"&gt;Peso Caja Vendida&lt;/property&gt;
+      &lt;property name="ImageAlignment"&gt;Near&lt;/property&gt;
+      &lt;property name="ImageIndex"&gt;-1&lt;/property&gt;
+      &lt;property name="FieldName"&gt;Peso Caja Vendida&lt;/property&gt;
+      &lt;property name="ColumnEditName" /&gt;
+      &lt;property name="VisibleIndex"&gt;2&lt;/property&gt;
+      &lt;property name="Visible"&gt;true&lt;/property&gt;
+      &lt;property name="Width"&gt;75&lt;/property&gt;
+      &lt;property name="DisplayFormat" isnull="true" iskey="true"&gt;
+        &lt;property name="FormatString"&gt;N&lt;/property&gt;
+        &lt;property name="FormatType"&gt;Numeric&lt;/property&gt;
+      &lt;/property&gt;
+      &lt;property name="MinWidth"&gt;20&lt;/property&gt;
+      &lt;property name="MaxWidth"&gt;0&lt;/property&gt;
+      &lt;property name="Summary" iskey="true" value="1"&gt;
+        &lt;property name="Item1" isnull="true" iskey="true"&gt;
+          &lt;property name="Tag" isnull="true" /&gt;
+          &lt;property name="FieldName"&gt;Peso Caja Vendida&lt;/property&gt;
+          &lt;property name="SummaryType"&gt;Average&lt;/property&gt;
+          &lt;property name="DisplayFormat"&gt;{0:N}&lt;/property&gt;
+        &lt;/property&gt;
+      &lt;/property&gt;
+    &lt;/property&gt;
+    &lt;property name="Item6" isnull="true" iskey="true"&gt;
+      &lt;property name="Name"&gt;colVenta&lt;/property&gt;
+      &lt;property name="Caption"&gt;Venta&lt;/property&gt;
+      &lt;property name="ImageAlignment"&gt;Near&lt;/property&gt;
+      &lt;property name="ImageIndex"&gt;-1&lt;/property&gt;
+      &lt;property name="FieldName"&gt;Venta&lt;/property&gt;
+      &lt;property name="ColumnEditName" /&gt;
+      &lt;property name="Width"&gt;75&lt;/property&gt;
+      &lt;property name="DisplayFormat" isnull="true" iskey="true"&gt;
+        &lt;property name="FormatString"&gt;c&lt;/property&gt;
+        &lt;property name="FormatType"&gt;Numeric&lt;/property&gt;
+      &lt;/property&gt;
+      &lt;property name="MinWidth"&gt;20&lt;/property&gt;
+      &lt;property name="MaxWidth"&gt;0&lt;/property&gt;
+      &lt;property name="Summary" iskey="true" value="1"&gt;
+        &lt;property name="Item1" isnull="true" iskey="true"&gt;
+          &lt;property name="Tag" isnull="true" /&gt;
+          &lt;property name="FieldName"&gt;Venta&lt;/property&gt;
+          &lt;property name="SummaryType"&gt;Sum&lt;/property&gt;
+          &lt;property name="DisplayFormat"&gt;{0:c}&lt;/property&gt;
+        &lt;/property&gt;
+      &lt;/property&gt;
+    &lt;/property&gt;
+    &lt;property name="Item7" isnull="true" iskey="true"&gt;
+      &lt;property name="Name"&gt;colCosto&lt;/property&gt;
+      &lt;property name="Caption"&gt;Costo&lt;/property&gt;
+      &lt;property name="ImageAlignment"&gt;Near&lt;/property&gt;
+      &lt;property name="ImageIndex"&gt;-1&lt;/property&gt;
+      &lt;property name="FieldName"&gt;Costo&lt;/property&gt;
+      &lt;property name="ColumnEditName" /&gt;
+      &lt;property name="Width"&gt;75&lt;/property&gt;
+      &lt;property name="DisplayFormat" isnull="true" iskey="true"&gt;
+        &lt;property name="FormatString"&gt;c&lt;/property&gt;
+        &lt;property name="FormatType"&gt;Numeric&lt;/property&gt;
+      &lt;/property&gt;
+      &lt;property name="MinWidth"&gt;20&lt;/property&gt;
+      &lt;property name="MaxWidth"&gt;0&lt;/property&gt;
+      &lt;property name="Summary" iskey="true" value="1"&gt;
+        &lt;property name="Item1" isnull="true" iskey="true"&gt;
+          &lt;property name="Tag" isnull="true" /&gt;
+          &lt;property name="FieldName"&gt;Costo&lt;/property&gt;
+          &lt;property name="SummaryType"&gt;Sum&lt;/property&gt;
+          &lt;property name="DisplayFormat"&gt;{0:c}&lt;/property&gt;
+        &lt;/property&gt;
+      &lt;/property&gt;
+    &lt;/property&gt;
+    &lt;property name="Item8" isnull="true" iskey="true"&gt;
+      &lt;property name="Name"&gt;colPrecio&lt;/property&gt;
+      &lt;property name="Caption"&gt;Precio&lt;/property&gt;
+      &lt;property name="ImageAlignment"&gt;Near&lt;/property&gt;
+      &lt;property name="ImageIndex"&gt;-1&lt;/property&gt;
+      &lt;property name="FieldName"&gt;Precio&lt;/property&gt;
+      &lt;property name="ColumnEditName" /&gt;
+      &lt;property name="Width"&gt;75&lt;/property&gt;
+      &lt;property name="DisplayFormat" isnull="true" iskey="true"&gt;
+        &lt;property name="FormatString"&gt;c&lt;/property&gt;
+        &lt;property name="FormatType"&gt;Numeric&lt;/property&gt;
+      &lt;/property&gt;
+      &lt;property name="MinWidth"&gt;20&lt;/property&gt;
+      &lt;property name="MaxWidth"&gt;0&lt;/property&gt;
+      &lt;property name="Summary" iskey="true" value="1"&gt;
+        &lt;property name="Item1" isnull="true" iskey="true"&gt;
+          &lt;property name="Tag" isnull="true" /&gt;
+          &lt;property name="FieldName"&gt;Precio&lt;/property&gt;
+          &lt;property name="SummaryType"&gt;Average&lt;/property&gt;
+          &lt;property name="DisplayFormat"&gt;{0:c}&lt;/property&gt;
+        &lt;/property&gt;
+      &lt;/property&gt;
+    &lt;/property&gt;
+    &lt;property name="Item9" isnull="true" iskey="true"&gt;
+      &lt;property name="Name"&gt;colKilosR&lt;/property&gt;
+      &lt;property name="Caption"&gt;Kilos Recolectados&lt;/property&gt;
+      &lt;property name="ImageAlignment"&gt;Near&lt;/property&gt;
+      &lt;property name="ImageIndex"&gt;-1&lt;/property&gt;
+      &lt;property name="FieldName"&gt;KilosR&lt;/property&gt;
+      &lt;property name="ColumnEditName" /&gt;
+      &lt;property name="Width"&gt;75&lt;/property&gt;
+      &lt;property name="DisplayFormat" isnull="true" iskey="true"&gt;
+        &lt;property name="FormatString"&gt;N&lt;/property&gt;
+        &lt;property name="FormatType"&gt;Numeric&lt;/property&gt;
+      &lt;/property&gt;
+      &lt;property name="MinWidth"&gt;20&lt;/property&gt;
+      &lt;property name="MaxWidth"&gt;0&lt;/property&gt;
+      &lt;property name="Summary" iskey="true" value="1"&gt;
+        &lt;property name="Item1" isnull="true" iskey="true"&gt;
+          &lt;property name="Tag" isnull="true" /&gt;
+          &lt;property name="FieldName"&gt;KilosR&lt;/property&gt;
+          &lt;property name="SummaryType"&gt;Sum&lt;/property&gt;
+          &lt;property name="DisplayFormat"&gt;{0:N}&lt;/property&gt;
+        &lt;/property&gt;
+      &lt;/property&gt;
+    &lt;/property&gt;
+    &lt;property name="Item10" isnull="true" iskey="true"&gt;
+      &lt;property name="Name"&gt;col%Kilos Rec Vendidos&lt;/property&gt;
+      &lt;property name="Caption"&gt;% Kilos Recolectados Vendidos&lt;/property&gt;
+      &lt;property name="ImageAlignment"&gt;Near&lt;/property&gt;
+      &lt;property name="ImageIndex"&gt;-1&lt;/property&gt;
+      &lt;property name="FieldName"&gt;%Kilos Rec Vendidos&lt;/property&gt;
+      &lt;property name="ColumnEditName" /&gt;
+      &lt;property name="VisibleIndex"&gt;3&lt;/property&gt;
+      &lt;property name="Visible"&gt;true&lt;/property&gt;
+      &lt;property name="Width"&gt;75&lt;/property&gt;
+      &lt;property name="DisplayFormat" isnull="true" iskey="true"&gt;
+        &lt;property name="FormatString"&gt;P&lt;/property&gt;
+        &lt;property name="FormatType"&gt;Numeric&lt;/property&gt;
+      &lt;/property&gt;
+      &lt;property name="MinWidth"&gt;20&lt;/property&gt;
+      &lt;property name="MaxWidth"&gt;0&lt;/property&gt;
+      &lt;property name="Summary" iskey="true" value="1"&gt;
+        &lt;property name="Item1" isnull="true" iskey="true"&gt;
+          &lt;property name="Tag" isnull="true" /&gt;
+          &lt;property name="FieldName"&gt;%Kilos Rec Vendidos&lt;/property&gt;
+          &lt;property name="SummaryType"&gt;Average&lt;/property&gt;
+          &lt;property name="DisplayFormat"&gt;{0:P}&lt;/property&gt;
+        &lt;/property&gt;
+      &lt;/property&gt;
+    &lt;/property&gt;
+    &lt;property name="Item11" isnull="true" iskey="true"&gt;
+      &lt;property name="Name"&gt;colDias Rec Vendidos&lt;/property&gt;
+      &lt;property name="Caption"&gt;Dias Recolectados Vendidos&lt;/property&gt;
+      &lt;property name="ImageAlignment"&gt;Near&lt;/property&gt;
+      &lt;property name="ImageIndex"&gt;-1&lt;/property&gt;
+      &lt;property name="FieldName"&gt;Dias Rec Vendidos&lt;/property&gt;
+      &lt;property name="ColumnEditName" /&gt;
+      &lt;property name="VisibleIndex"&gt;4&lt;/property&gt;
+      &lt;property name="Visible"&gt;true&lt;/property&gt;
+      &lt;property name="Width"&gt;75&lt;/property&gt;
+      &lt;property name="DisplayFormat" isnull="true" iskey="true"&gt;
+        &lt;property name="FormatString"&gt;N&lt;/property&gt;
+        &lt;property name="FormatType"&gt;Numeric&lt;/property&gt;
+      &lt;/property&gt;
+      &lt;property name="MinWidth"&gt;20&lt;/property&gt;
+      &lt;property name="MaxWidth"&gt;0&lt;/property&gt;
+      &lt;property name="Summary" iskey="true" value="1"&gt;
+        &lt;property name="Item1" isnull="true" iskey="true"&gt;
+          &lt;property name="Tag" isnull="true" /&gt;
+          &lt;property name="FieldName"&gt;Dias Rec Vendidos&lt;/property&gt;
+          &lt;property name="SummaryType"&gt;Average&lt;/property&gt;
+          &lt;property name="DisplayFormat"&gt;{0:N}&lt;/property&gt;
+        &lt;/property&gt;
+      &lt;/property&gt;
+    &lt;/property&gt;
+    &lt;property name="Item12" isnull="true" iskey="true"&gt;
+      &lt;property name="Name"&gt;colCosto Empaque&lt;/property&gt;
+      &lt;property name="Caption"&gt;Costo Empaque&lt;/property&gt;
+      &lt;property name="ImageAlignment"&gt;Near&lt;/property&gt;
+      &lt;property name="ImageIndex"&gt;-1&lt;/property&gt;
+      &lt;property name="FieldName"&gt;Costo Empaque&lt;/property&gt;
+      &lt;property name="ColumnEditName" /&gt;
+      &lt;property name="Width"&gt;75&lt;/property&gt;
+      &lt;property name="DisplayFormat" isnull="true" iskey="true"&gt;
+        &lt;property name="FormatString"&gt;c&lt;/property&gt;
+        &lt;property name="FormatType"&gt;Numeric&lt;/property&gt;
+      &lt;/property&gt;
+      &lt;property name="MinWidth"&gt;20&lt;/property&gt;
+      &lt;property name="MaxWidth"&gt;0&lt;/property&gt;
+      &lt;property name="Summary" iskey="true" value="1"&gt;
+        &lt;property name="Item1" isnull="true" iskey="true"&gt;
+          &lt;property name="Tag" isnull="true" /&gt;
+          &lt;property name="FieldName"&gt;Costo Empaque&lt;/property&gt;
+          &lt;property name="SummaryType"&gt;Sum&lt;/property&gt;
+          &lt;property name="DisplayFormat"&gt;{0:c}&lt;/property&gt;
+        &lt;/property&gt;
+      &lt;/property&gt;
+    &lt;/property&gt;
+    &lt;property name="Item13" isnull="true" iskey="true"&gt;
+      &lt;property name="Name"&gt;colCosot Empaque por Caja Vendidas&lt;/property&gt;
+      &lt;property name="Caption"&gt;Costo Empaque por Caja Vendidas&lt;/property&gt;
+      &lt;property name="ImageAlignment"&gt;Near&lt;/property&gt;
+      &lt;property name="ImageIndex"&gt;-1&lt;/property&gt;
+      &lt;property name="FieldName"&gt;Cosot Empaque por Caja Vendidas&lt;/property&gt;
+      &lt;property name="ColumnEditName" /&gt;
+      &lt;property name="VisibleIndex"&gt;5&lt;/property&gt;
+      &lt;property name="Visible"&gt;true&lt;/property&gt;
+      &lt;property name="Width"&gt;75&lt;/property&gt;
+      &lt;property name="DisplayFormat" isnull="true" iskey="true"&gt;
+        &lt;property name="FormatString"&gt;c&lt;/property&gt;
+        &lt;property name="FormatType"&gt;Numeric&lt;/property&gt;
+      &lt;/property&gt;
+      &lt;property name="MinWidth"&gt;20&lt;/property&gt;
+      &lt;property name="MaxWidth"&gt;0&lt;/property&gt;
+      &lt;property name="Summary" iskey="true" value="1"&gt;
+        &lt;property name="Item1" isnull="true" iskey="true"&gt;
+          &lt;property name="Tag" isnull="true" /&gt;
+          &lt;property name="FieldName"&gt;Cosot Empaque por Caja Vendidas&lt;/property&gt;
+          &lt;property name="SummaryType"&gt;Sum&lt;/property&gt;
+          &lt;property name="DisplayFormat"&gt;{0:c}&lt;/property&gt;
+        &lt;/property&gt;
+      &lt;/property&gt;
+    &lt;/property&gt;
+  &lt;/property&gt;
+  &lt;property name="ViewCaption" /&gt;
+  &lt;property name="BorderStyle"&gt;Default&lt;/property&gt;
+  &lt;property name="SynchronizeClones"&gt;true&lt;/property&gt;
+  &lt;property name="DetailTabHeaderLocation"&gt;Top&lt;/property&gt;
+  &lt;property name="Name"&gt;GridView1&lt;/property&gt;
+  &lt;property name="DetailHeight"&gt;350&lt;/property&gt;
+  &lt;property name="Tag" isnull="true" /&gt;
+  &lt;property name="GroupSummary" iskey="true" value="38"&gt;
+    &lt;property name="Item1" isnull="true" iskey="true"&gt;
+      &lt;property name="ShowInGroupColumnFooterName" /&gt;
+      &lt;property name="Tag" isnull="true" /&gt;
+      &lt;property name="FieldName"&gt;Costo por Gallina&lt;/property&gt;
+      &lt;property name="SummaryType"&gt;Sum&lt;/property&gt;
+      &lt;property name="DisplayFormat"&gt;(Suma de Costo por Gallina: {0:c})&lt;/property&gt;
+    &lt;/property&gt;
+    &lt;property name="Item2" isnull="true" iskey="true"&gt;
+      &lt;property name="ShowInGroupColumnFooterName" /&gt;
+      &lt;property name="Tag" isnull="true" /&gt;
+      &lt;property name="FieldName"&gt;Muertes&lt;/property&gt;
+      &lt;property name="SummaryType"&gt;Sum&lt;/property&gt;
+      &lt;property name="DisplayFormat"&gt;(Suma de Muertes: {0})&lt;/property&gt;
+    &lt;/property&gt;
+    &lt;property name="Item3" isnull="true" iskey="true"&gt;
+      &lt;property name="ShowInGroupColumnFooterName" /&gt;
+      &lt;property name="Tag" isnull="true" /&gt;
+      &lt;property name="FieldName"&gt;Perdida por Muerte&lt;/property&gt;
+      &lt;property name="SummaryType"&gt;Sum&lt;/property&gt;
+      &lt;property name="DisplayFormat"&gt;(Suma de Perdida por Muerte: {0:c})&lt;/property&gt;
+    &lt;/property&gt;
+    &lt;property name="Item4" isnull="true" iskey="true"&gt;
+      &lt;property name="ShowInGroupColumnFooterName" /&gt;
+      &lt;property name="Tag" isnull="true" /&gt;
+      &lt;property name="FieldName"&gt;% Mortalidad&lt;/property&gt;
+      &lt;property name="SummaryType"&gt;Average&lt;/property&gt;
+      &lt;property name="DisplayFormat"&gt;(Promedio de % Mortalidad: {0:P})&lt;/property&gt;
+    &lt;/property&gt;
+    &lt;property name="Item5" isnull="true" iskey="true"&gt;
+      &lt;property name="ShowInGroupColumnFooterName" /&gt;
+      &lt;property name="Tag" isnull="true" /&gt;
+      &lt;property name="FieldName"&gt;% Postura&lt;/property&gt;
+      &lt;property name="SummaryType"&gt;Average&lt;/property&gt;
+      &lt;property name="DisplayFormat"&gt;(Promedio de % Postura: {0:P})&lt;/property&gt;
+    &lt;/property&gt;
+    &lt;property name="Item6" isnull="true" iskey="true"&gt;
+      &lt;property name="ShowInGroupColumnFooterName" /&gt;
+      &lt;property name="Tag" isnull="true" /&gt;
+      &lt;property name="FieldName"&gt;Costo por %Podtura&lt;/property&gt;
+      &lt;property name="SummaryType"&gt;Sum&lt;/property&gt;
+      &lt;property name="DisplayFormat"&gt;(Suma de Costo por %Podtura: {0:c})&lt;/property&gt;
+    &lt;/property&gt;
+    &lt;property name="Item7" isnull="true" iskey="true"&gt;
+      &lt;property name="ShowInGroupColumnFooterName" /&gt;
+      &lt;property name="Tag" isnull="true" /&gt;
+      &lt;property name="FieldName"&gt;Kilos por Caja&lt;/property&gt;
+      &lt;property name="SummaryType"&gt;Average&lt;/property&gt;
+      &lt;property name="DisplayFormat"&gt;(Promedio de Kilos por Caja: {0:G})&lt;/property&gt;
+    &lt;/property&gt;
+    &lt;property name="Item8" isnull="true" iskey="true"&gt;
+      &lt;property name="ShowInGroupColumnFooterName" /&gt;
+      &lt;property name="Tag" isnull="true" /&gt;
+      &lt;property name="FieldName"&gt;Alimento Consumido&lt;/property&gt;
+      &lt;property name="SummaryType"&gt;Sum&lt;/property&gt;
+      &lt;property name="DisplayFormat"&gt;(Suma de Alimento Consumido: {0:N})&lt;/property&gt;
+    &lt;/property&gt;
+    &lt;property name="Item9" isnull="true" iskey="true"&gt;
+      &lt;property name="ShowInGroupColumnFooterName" /&gt;
+      &lt;property name="Tag" isnull="true" /&gt;
+      &lt;property name="FieldName"&gt;Gastos Directos&lt;/property&gt;
+      &lt;property name="SummaryType"&gt;Sum&lt;/property&gt;
+      &lt;property name="DisplayFormat"&gt;(Suma de Gastos Directos: {0:c})&lt;/property&gt;
+    &lt;/property&gt;
+    &lt;property name="Item10" isnull="true" iskey="true"&gt;
+      &lt;property name="ShowInGroupColumnFooterName" /&gt;
+      &lt;property name="Tag" isnull="true" /&gt;
+      &lt;property name="FieldName"&gt;Gastos Directos por Gallina&lt;/property&gt;
+      &lt;property name="SummaryType"&gt;Sum&lt;/property&gt;
+      &lt;property name="DisplayFormat"&gt;(Suma de Gastos Directos por Gallina: {0:c})&lt;/property&gt;
+    &lt;/property&gt;
+    &lt;property name="Item11" isnull="true" iskey="true"&gt;
+      &lt;property name="ShowInGroupColumnFooterName" /&gt;
+      &lt;property name="Tag" isnull="true" /&gt;
+      &lt;property name="FieldName"&gt;Sueldos y Prestaciones&lt;/property&gt;
+      &lt;property name="SummaryType"&gt;Sum&lt;/property&gt;
+      &lt;property name="DisplayFormat"&gt;(Suma de Sueldos y Prestaciones: {0})&lt;/property&gt;
+    &lt;/property&gt;
+    &lt;property name="Item12" isnull="true" iskey="true"&gt;
+      &lt;property name="ShowInGroupColumnFooterName" /&gt;
+      &lt;property name="Tag" isnull="true" /&gt;
+      &lt;property name="FieldName"&gt;Sueldos y Pres por Gallinas&lt;/property&gt;
+      &lt;property name="SummaryType"&gt;Sum&lt;/property&gt;
+      &lt;property name="DisplayFormat"&gt;(Suma de Sueldos y Pres por Gallinas: {0:c})&lt;/property&gt;
+    &lt;/property&gt;
+    &lt;property name="Item13" isnull="true" iskey="true"&gt;
+      &lt;property name="ShowInGroupColumnFooterName"&gt;colCajas&lt;/property&gt;
+      &lt;property name="Tag" isnull="true" /&gt;
+      &lt;property name="FieldName"&gt;Cajas&lt;/property&gt;
+      &lt;property name="SummaryType"&gt;Sum&lt;/property&gt;
+      &lt;property name="DisplayFormat"&gt;{0:###,##0}&lt;/property&gt;
+    &lt;/property&gt;
+    &lt;property name="Item14" isnull="true" iskey="true"&gt;
+      &lt;property name="ShowInGroupColumnFooterName" /&gt;
+      &lt;property name="Tag" isnull="true" /&gt;
+      &lt;property name="FieldName"&gt;Kilos&lt;/property&gt;
+      &lt;property name="SummaryType"&gt;Sum&lt;/property&gt;
+      &lt;property name="DisplayFormat"&gt;(Suma de Kilos: {0:N})&lt;/property&gt;
+    &lt;/property&gt;
+    &lt;property name="Item15" isnull="true" iskey="true"&gt;
+      &lt;property name="ShowInGroupColumnFooterName"&gt;colKilos&lt;/property&gt;
+      &lt;property name="Tag" isnull="true" /&gt;
+      &lt;property name="FieldName"&gt;Kilos&lt;/property&gt;
+      &lt;property name="SummaryType"&gt;Sum&lt;/property&gt;
+      &lt;property name="DisplayFormat"&gt;{0:N}&lt;/property&gt;
+    &lt;/property&gt;
+    &lt;property name="Item16" isnull="true" iskey="true"&gt;
+      &lt;property name="ShowInGroupColumnFooterName" /&gt;
+      &lt;property name="Tag" isnull="true" /&gt;
+      &lt;property name="FieldName"&gt;Año&lt;/property&gt;
+      &lt;property name="SummaryType"&gt;None&lt;/property&gt;
+      &lt;property name="DisplayFormat"&gt;(Sin Función de Año: {0:###,##0})&lt;/property&gt;
+    &lt;/property&gt;
+    &lt;property name="Item17" isnull="true" iskey="true"&gt;
+      &lt;property name="ShowInGroupColumnFooterName" /&gt;
+      &lt;property name="Tag" isnull="true" /&gt;
+      &lt;property name="FieldName"&gt;Peso Caja Vendida&lt;/property&gt;
+      &lt;property name="SummaryType"&gt;None&lt;/property&gt;
+      &lt;property name="DisplayFormat"&gt;(Sin Función de Peso Caja Vendida: {0})&lt;/property&gt;
+    &lt;/property&gt;
+    &lt;property name="Item18" isnull="true" iskey="true"&gt;
+      &lt;property name="ShowInGroupColumnFooterName" /&gt;
+      &lt;property name="Tag" isnull="true" /&gt;
+      &lt;property name="FieldName"&gt;Peso Caja Vendida&lt;/property&gt;
+      &lt;property name="SummaryType"&gt;Average&lt;/property&gt;
+      &lt;property name="DisplayFormat"&gt;(Promedio de Peso Caja Vendida: {0:N})&lt;/property&gt;
+    &lt;/property&gt;
+    &lt;property name="Item19" isnull="true" iskey="true"&gt;
+      &lt;property name="ShowInGroupColumnFooterName"&gt;colPeso Caja Vendida&lt;/property&gt;
+      &lt;property name="Tag" isnull="true" /&gt;
+      &lt;property name="FieldName"&gt;Peso Caja Vendida&lt;/property&gt;
+      &lt;property name="SummaryType"&gt;Average&lt;/property&gt;
+      &lt;property name="DisplayFormat"&gt;(Promedio de Peso Caja Vendida: {0:N})&lt;/property&gt;
+    &lt;/property&gt;
+    &lt;property name="Item20" isnull="true" iskey="true"&gt;
+      &lt;property name="ShowInGroupColumnFooterName" /&gt;
+      &lt;property name="Tag" isnull="true" /&gt;
+      &lt;property name="FieldName"&gt;Venta&lt;/property&gt;
+      &lt;property name="SummaryType"&gt;None&lt;/property&gt;
+      &lt;property name="DisplayFormat"&gt;(Sin Función de Venta: {0})&lt;/property&gt;
+    &lt;/property&gt;
+    &lt;property name="Item21" isnull="true" iskey="true"&gt;
+      &lt;property name="ShowInGroupColumnFooterName" /&gt;
+      &lt;property name="Tag" isnull="true" /&gt;
+      &lt;property name="FieldName"&gt;Venta&lt;/property&gt;
+      &lt;property name="SummaryType"&gt;Sum&lt;/property&gt;
+      &lt;property name="DisplayFormat"&gt;(Suma de Venta: {0})&lt;/property&gt;
+    &lt;/property&gt;
+    &lt;property name="Item22" isnull="true" iskey="true"&gt;
+      &lt;property name="ShowInGroupColumnFooterName"&gt;colVenta&lt;/property&gt;
+      &lt;property name="Tag" isnull="true" /&gt;
+      &lt;property name="FieldName"&gt;Venta&lt;/property&gt;
+      &lt;property name="SummaryType"&gt;Sum&lt;/property&gt;
+      &lt;property name="DisplayFormat"&gt;{0}&lt;/property&gt;
+    &lt;/property&gt;
+    &lt;property name="Item23" isnull="true" iskey="true"&gt;
+      &lt;property name="ShowInGroupColumnFooterName" /&gt;
+      &lt;property name="Tag" isnull="true" /&gt;
+      &lt;property name="FieldName"&gt;Costo&lt;/property&gt;
+      &lt;property name="SummaryType"&gt;None&lt;/property&gt;
+      &lt;property name="DisplayFormat"&gt;(Sin Función de Costo: {0})&lt;/property&gt;
+    &lt;/property&gt;
+    &lt;property name="Item24" isnull="true" iskey="true"&gt;
+      &lt;property name="ShowInGroupColumnFooterName" /&gt;
+      &lt;property name="Tag" isnull="true" /&gt;
+      &lt;property name="FieldName"&gt;Costo&lt;/property&gt;
+      &lt;property name="SummaryType"&gt;Sum&lt;/property&gt;
+      &lt;property name="DisplayFormat"&gt;(Suma de Costo: {0:c})&lt;/property&gt;
+    &lt;/property&gt;
+    &lt;property name="Item25" isnull="true" iskey="true"&gt;
+      &lt;property name="ShowInGroupColumnFooterName"&gt;colCosto&lt;/property&gt;
+      &lt;property name="Tag" isnull="true" /&gt;
+      &lt;property name="FieldName"&gt;Costo&lt;/property&gt;
+      &lt;property name="SummaryType"&gt;Sum&lt;/property&gt;
+      &lt;property name="DisplayFormat"&gt;{0:c}&lt;/property&gt;
+    &lt;/property&gt;
+    &lt;property name="Item26" isnull="true" iskey="true"&gt;
+      &lt;property name="ShowInGroupColumnFooterName" /&gt;
+      &lt;property name="Tag" isnull="true" /&gt;
+      &lt;property name="FieldName"&gt;Precio&lt;/property&gt;
+      &lt;property name="SummaryType"&gt;None&lt;/property&gt;
+      &lt;property name="DisplayFormat"&gt;(Sin Función de Precio: {0})&lt;/property&gt;
+    &lt;/property&gt;
+    &lt;property name="Item27" isnull="true" iskey="true"&gt;
+      &lt;property name="ShowInGroupColumnFooterName" /&gt;
+      &lt;property name="Tag" isnull="true" /&gt;
+      &lt;property name="FieldName"&gt;Precio&lt;/property&gt;
+      &lt;property name="SummaryType"&gt;Average&lt;/property&gt;
+      &lt;property name="DisplayFormat"&gt;(Promedio de Precio: {0})&lt;/property&gt;
+    &lt;/property&gt;
+    &lt;property name="Item28" isnull="true" iskey="true"&gt;
+      &lt;property name="ShowInGroupColumnFooterName"&gt;colPrecio&lt;/property&gt;
+      &lt;property name="Tag" isnull="true" /&gt;
+      &lt;property name="FieldName"&gt;Precio&lt;/property&gt;
+      &lt;property name="SummaryType"&gt;Average&lt;/property&gt;
+      &lt;property name="DisplayFormat"&gt;(Promedio de Precio: {0})&lt;/property&gt;
+    &lt;/property&gt;
+    &lt;property name="Item29" isnull="true" iskey="true"&gt;
+      &lt;property name="ShowInGroupColumnFooterName" /&gt;
+      &lt;property name="Tag" isnull="true" /&gt;
+      &lt;property name="FieldName"&gt;KilosR&lt;/property&gt;
+      &lt;property name="SummaryType"&gt;None&lt;/property&gt;
+      &lt;property name="DisplayFormat"&gt;(Sin Función de KilosR: {0})&lt;/property&gt;
+    &lt;/property&gt;
+    &lt;property name="Item30" isnull="true" iskey="true"&gt;
+      &lt;property name="ShowInGroupColumnFooterName" /&gt;
+      &lt;property name="Tag" isnull="true" /&gt;
+      &lt;property name="FieldName"&gt;KilosR&lt;/property&gt;
+      &lt;property name="SummaryType"&gt;Sum&lt;/property&gt;
+      &lt;property name="DisplayFormat"&gt;(Suma de Kilos Recolectados: {0:N})&lt;/property&gt;
+    &lt;/property&gt;
+    &lt;property name="Item31" isnull="true" iskey="true"&gt;
+      &lt;property name="ShowInGroupColumnFooterName"&gt;colKilosR&lt;/property&gt;
+      &lt;property name="Tag" isnull="true" /&gt;
+      &lt;property name="FieldName"&gt;KilosR&lt;/property&gt;
+      &lt;property name="SummaryType"&gt;Sum&lt;/property&gt;
+      &lt;property name="DisplayFormat"&gt;{0:N}&lt;/property&gt;
+    &lt;/property&gt;
+    &lt;property name="Item32" isnull="true" iskey="true"&gt;
+      &lt;property name="ShowInGroupColumnFooterName" /&gt;
+      &lt;property name="Tag" isnull="true" /&gt;
+      &lt;property name="FieldName"&gt;%Kilos Rec Vendidos&lt;/property&gt;
+      &lt;property name="SummaryType"&gt;Average&lt;/property&gt;
+      &lt;property name="DisplayFormat"&gt;(Promedio de % Kilos Recolectados Vendidos: {0:P})&lt;/property&gt;
+    &lt;/property&gt;
+    &lt;property name="Item33" isnull="true" iskey="true"&gt;
+      &lt;property name="ShowInGroupColumnFooterName"&gt;col%Kilos Rec Vendidos&lt;/property&gt;
+      &lt;property name="Tag" isnull="true" /&gt;
+      &lt;property name="FieldName"&gt;%Kilos Rec Vendidos&lt;/property&gt;
+      &lt;property name="SummaryType"&gt;Average&lt;/property&gt;
+      &lt;property name="DisplayFormat"&gt;(Promedio de % Kilos Recolectados Vendidos: {0:P})&lt;/property&gt;
+    &lt;/property&gt;
+    &lt;property name="Item34" isnull="true" iskey="true"&gt;
+      &lt;property name="ShowInGroupColumnFooterName" /&gt;
+      &lt;property name="Tag" isnull="true" /&gt;
+      &lt;property name="FieldName"&gt;Dias Rec Vendidos&lt;/property&gt;
+      &lt;property name="SummaryType"&gt;None&lt;/property&gt;
+      &lt;property name="DisplayFormat"&gt;(Sin Función de Dias Rec Vendidos: {0})&lt;/property&gt;
+    &lt;/property&gt;
+    &lt;property name="Item35" isnull="true" iskey="true"&gt;
+      &lt;property name="ShowInGroupColumnFooterName" /&gt;
+      &lt;property name="Tag" isnull="true" /&gt;
+      &lt;property name="FieldName"&gt;Dias Rec Vendidos&lt;/property&gt;
+      &lt;property name="SummaryType"&gt;Average&lt;/property&gt;
+      &lt;property name="DisplayFormat"&gt;(Promedio de Dias Recolectados Vendidos: {0:N})&lt;/property&gt;
+    &lt;/property&gt;
+    &lt;property name="Item36" isnull="true" iskey="true"&gt;
+      &lt;property name="ShowInGroupColumnFooterName"&gt;colCosto Empaque&lt;/property&gt;
+      &lt;property name="Tag" isnull="true" /&gt;
+      &lt;property name="FieldName"&gt;Costo Empaque&lt;/property&gt;
+      &lt;property name="SummaryType"&gt;Sum&lt;/property&gt;
+      &lt;property name="DisplayFormat"&gt;{0:c}&lt;/property&gt;
+    &lt;/property&gt;
+    &lt;property name="Item37" isnull="true" iskey="true"&gt;
+      &lt;property name="ShowInGroupColumnFooterName" /&gt;
+      &lt;property name="Tag" isnull="true" /&gt;
+      &lt;property name="FieldName"&gt;Cosot Empaque por Caja Vendidas&lt;/property&gt;
+      &lt;property name="SummaryType"&gt;Sum&lt;/property&gt;
+      &lt;property name="DisplayFormat"&gt;(Suma de Costo Empaque por Caja Vendidas: {0:c})&lt;/property&gt;
+    &lt;/property&gt;
+    &lt;property name="Item38" isnull="true" iskey="true"&gt;
+      &lt;property name="ShowInGroupColumnFooterName" /&gt;
+      &lt;property name="Tag" isnull="true" /&gt;
+      &lt;property name="FieldName"&gt;Cosot Empaque por Caja Vendidas&lt;/property&gt;
+      &lt;property name="SummaryType"&gt;Sum&lt;/property&gt;
+      &lt;property name="DisplayFormat"&gt;(Suma de Costo Empaque por Caja Vendidas: {0:c})&lt;/property&gt;
+    &lt;/property&gt;
+  &lt;/property&gt;
+  &lt;property name="ActiveFilterString" /&gt;
+  &lt;property name="MRUFiltersInfo" iskey="true" value="1"&gt;
+    &lt;property name="Item1" isnull="true" iskey="true"&gt;
+      &lt;property name="NonColumnFilter" /&gt;
+      &lt;property name="ColumnsFilter" iskey="true" value="0" /&gt;
+    &lt;/property&gt;
+  &lt;/property&gt;
+  &lt;property name="FormatRules" iskey="true" value="0" /&gt;
+  &lt;property name="FormatConditions" iskey="true" value="0" /&gt;
+  &lt;property name="GroupSummarySortInfoState" /&gt;
+  &lt;property name="FindFilterText" /&gt;
+  &lt;property name="FindPanelVisible"&gt;false&lt;/property&gt;
+&lt;/XtraSerializer&gt;</Layout>
+      <NombreTabla>VentaRecoleccion</NombreTabla>
+    </Output>
+    <Output xsi:type="OutputGrid">
+      <Tipo>Grid</Tipo>
+      <Nombre>CRIANZA</Nombre>
+      <id>d09b4630-3da0-4acf-8587-e6c2f4b316e8</id>
+      <Layout>&lt;XtraSerializer version="1.0" application="View"&gt;
+  &lt;property name="#LayoutVersion" /&gt;
+  &lt;property name="#LayoutScaleFactor"&gt;@1,Width=1@1,Height=1&lt;/property&gt;
+  &lt;property name="OptionsBehavior" isnull="true" iskey="true"&gt;
+    &lt;property name="AllowAddRows"&gt;False&lt;/property&gt;
+    &lt;property name="Editable"&gt;false&lt;/property&gt;
+  &lt;/property&gt;
+  &lt;property name="OptionsSelection" isnull="true" iskey="true"&gt;
+    &lt;property name="EnableAppearanceFocusedCell"&gt;false&lt;/property&gt;
+    &lt;property name="MultiSelect"&gt;true&lt;/property&gt;
+  &lt;/property&gt;
+  &lt;property name="OptionsView" isnull="true" iskey="true"&gt;
+    &lt;property name="GroupFooterShowMode"&gt;VisibleAlways&lt;/property&gt;
+    &lt;property name="ShowAutoFilterRow"&gt;true&lt;/property&gt;
+    &lt;property name="ShowFooter"&gt;true&lt;/property&gt;
+    &lt;property name="ShowGroupedColumns"&gt;true&lt;/property&gt;
+    &lt;property name="ShowIndicator"&gt;false&lt;/property&gt;
+    &lt;property name="EnableAppearanceOddRow"&gt;true&lt;/property&gt;
+    &lt;property name="EnableAppearanceEvenRow"&gt;true&lt;/property&gt;
+  &lt;/property&gt;
+  &lt;property name="OptionsMenu" isnull="true" iskey="true"&gt;
+    &lt;property name="ShowConditionalFormattingItem"&gt;true&lt;/property&gt;
+  &lt;/property&gt;
+  &lt;property name="FixedLineWidth"&gt;2&lt;/property&gt;
+  &lt;property name="IndicatorWidth"&gt;-1&lt;/property&gt;
+  &lt;property name="ColumnPanelRowHeight"&gt;-1&lt;/property&gt;
+  &lt;property name="RowSeparatorHeight"&gt;0&lt;/property&gt;
+  &lt;property name="FooterPanelHeight"&gt;-1&lt;/property&gt;
+  &lt;property name="HorzScrollVisibility"&gt;Auto&lt;/property&gt;
+  &lt;property name="VertScrollVisibility"&gt;Auto&lt;/property&gt;
+  &lt;property name="RowHeight"&gt;-1&lt;/property&gt;
+  &lt;property name="GroupRowHeight"&gt;-1&lt;/property&gt;
+  &lt;property name="GroupFormat"&gt;{0}: [#image]{1} {2}&lt;/property&gt;
+  &lt;property name="ChildGridLevelName" /&gt;
+  &lt;property name="VertScrollTipFieldName" /&gt;
+  &lt;property name="PreviewFieldName" /&gt;
+  &lt;property name="GroupPanelText"&gt;Arrastre una columna para agrupar&lt;/property&gt;
+  &lt;property name="NewItemRowText" /&gt;
+  &lt;property name="LevelIndent"&gt;-1&lt;/property&gt;
+  &lt;property name="PreviewIndent"&gt;-1&lt;/property&gt;
+  &lt;property name="PreviewLineCount"&gt;-1&lt;/property&gt;
+  &lt;property name="ScrollStyle"&gt;LiveVertScroll, LiveHorzScroll&lt;/property&gt;
+  &lt;property name="FocusRectStyle"&gt;CellFocus&lt;/property&gt;
+  &lt;property name="HorzScrollStep"&gt;0&lt;/property&gt;
+  &lt;property name="ActiveFilterEnabled"&gt;true&lt;/property&gt;
+  &lt;property name="ViewCaptionHeight"&gt;-1&lt;/property&gt;
+  &lt;property name="Columns" iskey="true" value="12"&gt;
+    &lt;property name="Item1" isnull="true" iskey="true"&gt;
+      &lt;property name="Name"&gt;colAlmacen&lt;/property&gt;
+      &lt;property name="OptionsFilter" isnull="true" iskey="true"&gt;
+        &lt;property name="AutoFilterCondition"&gt;Contains&lt;/property&gt;
+      &lt;/property&gt;
+      &lt;property name="Caption"&gt;Almacen - CRIANZA&lt;/property&gt;
+      &lt;property name="ImageAlignment"&gt;Near&lt;/property&gt;
+      &lt;property name="ImageIndex"&gt;-1&lt;/property&gt;
+      &lt;property name="FieldName"&gt;Almacen&lt;/property&gt;
+      &lt;property name="ColumnEditName" /&gt;
+      &lt;property name="VisibleIndex"&gt;0&lt;/property&gt;
+      &lt;property name="Visible"&gt;true&lt;/property&gt;
+      &lt;property name="Width"&gt;75&lt;/property&gt;
+      &lt;property name="DisplayFormat" isnull="true" iskey="true"&gt;
+        &lt;property name="FormatString" /&gt;
+        &lt;property name="FormatType"&gt;Numeric&lt;/property&gt;
+      &lt;/property&gt;
+      &lt;property name="MinWidth"&gt;20&lt;/property&gt;
+      &lt;property name="MaxWidth"&gt;0&lt;/property&gt;
+    &lt;/property&gt;
+    &lt;property name="Item2" isnull="true" iskey="true"&gt;
+      &lt;property name="Name"&gt;colSemana&lt;/property&gt;
+      &lt;property name="Caption"&gt;Semana&lt;/property&gt;
+      &lt;property name="ImageAlignment"&gt;Near&lt;/property&gt;
+      &lt;property name="ImageIndex"&gt;-1&lt;/property&gt;
+      &lt;property name="FieldName"&gt;Semana&lt;/property&gt;
+      &lt;property name="ColumnEditName" /&gt;
+      &lt;property name="VisibleIndex"&gt;1&lt;/property&gt;
+      &lt;property name="Visible"&gt;true&lt;/property&gt;
+      &lt;property name="Width"&gt;75&lt;/property&gt;
+      &lt;property name="MinWidth"&gt;20&lt;/property&gt;
+      &lt;property name="MaxWidth"&gt;0&lt;/property&gt;
+    &lt;/property&gt;
+    &lt;property name="Item3" isnull="true" iskey="true"&gt;
+      &lt;property name="Name"&gt;colAño&lt;/property&gt;
+      &lt;property name="Caption"&gt;Año&lt;/property&gt;
+      &lt;property name="ImageAlignment"&gt;Near&lt;/property&gt;
+      &lt;property name="ImageIndex"&gt;-1&lt;/property&gt;
+      &lt;property name="FieldName"&gt;Año&lt;/property&gt;
+      &lt;property name="ColumnEditName" /&gt;
+      &lt;property name="VisibleIndex"&gt;2&lt;/property&gt;
+      &lt;property name="Visible"&gt;true&lt;/property&gt;
+      &lt;property name="Width"&gt;75&lt;/property&gt;
+      &lt;property name="MinWidth"&gt;20&lt;/property&gt;
+      &lt;property name="MaxWidth"&gt;0&lt;/property&gt;
+    &lt;/property&gt;
+    &lt;property name="Item4" isnull="true" iskey="true"&gt;
+      &lt;property name="Name"&gt;colGallinas Inicio Postura&lt;/property&gt;
+      &lt;property name="Caption"&gt;Gallinas Inicio Postura&lt;/property&gt;
+      &lt;property name="ImageAlignment"&gt;Near&lt;/property&gt;
+      &lt;property name="ImageIndex"&gt;-1&lt;/property&gt;
+      &lt;property name="FieldName"&gt;Gallinas Inicio Postura&lt;/property&gt;
+      &lt;property name="ColumnEditName" /&gt;
+      &lt;property name="VisibleIndex"&gt;3&lt;/property&gt;
+      &lt;property name="Visible"&gt;true&lt;/property&gt;
+      &lt;property name="Width"&gt;75&lt;/property&gt;
+      &lt;property name="DisplayFormat" isnull="true" iskey="true"&gt;
+        &lt;property name="FormatString"&gt;###,##0&lt;/property&gt;
+        &lt;property name="FormatType"&gt;Numeric&lt;/property&gt;
+      &lt;/property&gt;
+      &lt;property name="MinWidth"&gt;20&lt;/property&gt;
+      &lt;property name="MaxWidth"&gt;0&lt;/property&gt;
+    &lt;/property&gt;
+    &lt;property name="Item5" isnull="true" iskey="true"&gt;
+      &lt;property name="Name"&gt;colCosto Incio Postura&lt;/property&gt;
+      &lt;property name="Caption"&gt;Costo Incio Postura&lt;/property&gt;
+      &lt;property name="ImageAlignment"&gt;Near&lt;/property&gt;
+      &lt;property name="ImageIndex"&gt;-1&lt;/property&gt;
+      &lt;property name="FieldName"&gt;Costo Incio Postura&lt;/property&gt;
+      &lt;property name="ColumnEditName" /&gt;
+      &lt;property name="VisibleIndex"&gt;4&lt;/property&gt;
+      &lt;property name="Visible"&gt;true&lt;/property&gt;
+      &lt;property name="Width"&gt;75&lt;/property&gt;
+      &lt;property name="DisplayFormat" isnull="true" iskey="true"&gt;
+        &lt;property name="FormatString"&gt;c&lt;/property&gt;
+        &lt;property name="FormatType"&gt;Numeric&lt;/property&gt;
+      &lt;/property&gt;
+      &lt;property name="MinWidth"&gt;20&lt;/property&gt;
+      &lt;property name="MaxWidth"&gt;0&lt;/property&gt;
+    &lt;/property&gt;
+    &lt;property name="Item6" isnull="true" iskey="true"&gt;
+      &lt;property name="Name"&gt;colGastos Directos&lt;/property&gt;
+      &lt;property name="Caption"&gt;Gastos Directos&lt;/property&gt;
+      &lt;property name="ImageAlignment"&gt;Near&lt;/property&gt;
+      &lt;property name="ImageIndex"&gt;-1&lt;/property&gt;
+      &lt;property name="FieldName"&gt;Gastos Directos&lt;/property&gt;
+      &lt;property name="ColumnEditName" /&gt;
+      &lt;property name="VisibleIndex"&gt;10&lt;/property&gt;
+      &lt;property name="Visible"&gt;true&lt;/property&gt;
+      &lt;property name="Width"&gt;75&lt;/property&gt;
+      &lt;property name="DisplayFormat" isnull="true" iskey="true"&gt;
+        &lt;property name="FormatString"&gt;c&lt;/property&gt;
+        &lt;property name="FormatType"&gt;Numeric&lt;/property&gt;
+      &lt;/property&gt;
+      &lt;property name="MinWidth"&gt;20&lt;/property&gt;
+      &lt;property name="MaxWidth"&gt;0&lt;/property&gt;
+    &lt;/property&gt;
+    &lt;property name="Item7" isnull="true" iskey="true"&gt;
+      &lt;property name="Name"&gt;colSueldos y Salarios&lt;/property&gt;
+      &lt;property name="Caption"&gt;Sueldos y Salarios&lt;/property&gt;
+      &lt;property name="ImageAlignment"&gt;Near&lt;/property&gt;
+      &lt;property name="ImageIndex"&gt;-1&lt;/property&gt;
+      &lt;property name="FieldName"&gt;Sueldos y Salarios&lt;/property&gt;
+      &lt;property name="ColumnEditName" /&gt;
+      &lt;property name="VisibleIndex"&gt;11&lt;/property&gt;
+      &lt;property name="Visible"&gt;true&lt;/property&gt;
+      &lt;property name="Width"&gt;75&lt;/property&gt;
+      &lt;property name="DisplayFormat" isnull="true" iskey="true"&gt;
+        &lt;property name="FormatString"&gt;c&lt;/property&gt;
+        &lt;property name="FormatType"&gt;Numeric&lt;/property&gt;
+      &lt;/property&gt;
+      &lt;property name="MinWidth"&gt;20&lt;/property&gt;
+      &lt;property name="MaxWidth"&gt;0&lt;/property&gt;
+    &lt;/property&gt;
+    &lt;property name="Item8" isnull="true" iskey="true"&gt;
+      &lt;property name="Name"&gt;colAlimento&lt;/property&gt;
+      &lt;property name="Caption"&gt;Alimento&lt;/property&gt;
+      &lt;property name="ImageAlignment"&gt;Near&lt;/property&gt;
+      &lt;property name="ImageIndex"&gt;-1&lt;/property&gt;
+      &lt;property name="FieldName"&gt;Alimento&lt;/property&gt;
+      &lt;property name="ColumnEditName" /&gt;
+      &lt;property name="VisibleIndex"&gt;5&lt;/property&gt;
+      &lt;property name="Visible"&gt;true&lt;/property&gt;
+      &lt;property name="Width"&gt;75&lt;/property&gt;
+      &lt;property name="DisplayFormat" isnull="true" iskey="true"&gt;
+        &lt;property name="FormatString"&gt;N&lt;/property&gt;
+        &lt;property name="FormatType"&gt;Numeric&lt;/property&gt;
+      &lt;/property&gt;
+      &lt;property name="MinWidth"&gt;20&lt;/property&gt;
+      &lt;property name="MaxWidth"&gt;0&lt;/property&gt;
+    &lt;/property&gt;
+    &lt;property name="Item9" isnull="true" iskey="true"&gt;
+      &lt;property name="Name"&gt;colCosto Alimento&lt;/property&gt;
+      &lt;property name="Caption"&gt;Costo Alimento&lt;/property&gt;
+      &lt;property name="ImageAlignment"&gt;Near&lt;/property&gt;
+      &lt;property name="ImageIndex"&gt;-1&lt;/property&gt;
+      &lt;property name="FieldName"&gt;Costo Alimento&lt;/property&gt;
+      &lt;property name="ColumnEditName" /&gt;
+      &lt;property name="VisibleIndex"&gt;6&lt;/property&gt;
+      &lt;property name="Visible"&gt;true&lt;/property&gt;
+      &lt;property name="Width"&gt;75&lt;/property&gt;
+      &lt;property name="DisplayFormat" isnull="true" iskey="true"&gt;
+        &lt;property name="FormatString"&gt;c&lt;/property&gt;
+        &lt;property name="FormatType"&gt;Numeric&lt;/property&gt;
+      &lt;/property&gt;
+      &lt;property name="MinWidth"&gt;20&lt;/property&gt;
+      &lt;property name="MaxWidth"&gt;0&lt;/property&gt;
+    &lt;/property&gt;
+    &lt;property name="Item10" isnull="true" iskey="true"&gt;
+      &lt;property name="Name"&gt;colCosto Complemento Alimentario&lt;/property&gt;
+      &lt;property name="Caption"&gt;Costo Complemento Alimentario&lt;/property&gt;
+      &lt;property name="ImageAlignment"&gt;Near&lt;/property&gt;
+      &lt;property name="ImageIndex"&gt;-1&lt;/property&gt;
+      &lt;property name="FieldName"&gt;Costo Complemento Alimentario&lt;/property&gt;
+      &lt;property name="ColumnEditName" /&gt;
+      &lt;property name="VisibleIndex"&gt;7&lt;/property&gt;
+      &lt;property name="Visible"&gt;true&lt;/property&gt;
+      &lt;property name="Width"&gt;75&lt;/property&gt;
+      &lt;property name="DisplayFormat" isnull="true" iskey="true"&gt;
+        &lt;property name="FormatString"&gt;c&lt;/property&gt;
+        &lt;property name="FormatType"&gt;Numeric&lt;/property&gt;
+      &lt;/property&gt;
+      &lt;property name="MinWidth"&gt;20&lt;/property&gt;
+      &lt;property name="MaxWidth"&gt;0&lt;/property&gt;
+    &lt;/property&gt;
+    &lt;property name="Item11" isnull="true" iskey="true"&gt;
+      &lt;property name="Name"&gt;colCosto Medicamento Preventivo&lt;/property&gt;
+      &lt;property name="Caption"&gt;Costo Medicamento Preventivo&lt;/property&gt;
+      &lt;property name="ImageAlignment"&gt;Near&lt;/property&gt;
+      &lt;property name="ImageIndex"&gt;-1&lt;/property&gt;
+      &lt;property name="FieldName"&gt;Costo Medicamento Preventivo&lt;/property&gt;
+      &lt;property name="ColumnEditName" /&gt;
+      &lt;property name="VisibleIndex"&gt;8&lt;/property&gt;
+      &lt;property name="Visible"&gt;true&lt;/property&gt;
+      &lt;property name="Width"&gt;75&lt;/property&gt;
+      &lt;property name="DisplayFormat" isnull="true" iskey="true"&gt;
+        &lt;property name="FormatString"&gt;c&lt;/property&gt;
+        &lt;property name="FormatType"&gt;Numeric&lt;/property&gt;
+      &lt;/property&gt;
+      &lt;property name="MinWidth"&gt;20&lt;/property&gt;
+      &lt;property name="MaxWidth"&gt;0&lt;/property&gt;
+    &lt;/property&gt;
+    &lt;property name="Item12" isnull="true" iskey="true"&gt;
+      &lt;property name="Name"&gt;colCosto Material Veterinario&lt;/property&gt;
+      &lt;property name="Caption"&gt;Costo Material Veterinario&lt;/property&gt;
+      &lt;property name="ImageAlignment"&gt;Near&lt;/property&gt;
+      &lt;property name="ImageIndex"&gt;-1&lt;/property&gt;
+      &lt;property name="FieldName"&gt;Costo Material Veterinario&lt;/property&gt;
+      &lt;property name="ColumnEditName" /&gt;
+      &lt;property name="VisibleIndex"&gt;9&lt;/property&gt;
+      &lt;property name="Visible"&gt;true&lt;/property&gt;
+      &lt;property name="Width"&gt;75&lt;/property&gt;
+      &lt;property name="DisplayFormat" isnull="true" iskey="true"&gt;
+        &lt;property name="FormatString"&gt;c&lt;/property&gt;
+        &lt;property name="FormatType"&gt;Numeric&lt;/property&gt;
+      &lt;/property&gt;
+      &lt;property name="MinWidth"&gt;20&lt;/property&gt;
+      &lt;property name="MaxWidth"&gt;0&lt;/property&gt;
+    &lt;/property&gt;
+  &lt;/property&gt;
+  &lt;property name="ViewCaption" /&gt;
+  &lt;property name="BorderStyle"&gt;Default&lt;/property&gt;
+  &lt;property name="SynchronizeClones"&gt;true&lt;/property&gt;
+  &lt;property name="DetailTabHeaderLocation"&gt;Top&lt;/property&gt;
+  &lt;property name="Name"&gt;GridView1&lt;/property&gt;
+  &lt;property name="DetailHeight"&gt;350&lt;/property&gt;
+  &lt;property name="Tag" isnull="true" /&gt;
+  &lt;property name="GroupSummary" iskey="true" value="3"&gt;
+    &lt;property name="Item1" isnull="true" iskey="true"&gt;
+      &lt;property name="ShowInGroupColumnFooterName" /&gt;
+      &lt;property name="Tag" isnull="true" /&gt;
+      &lt;property name="FieldName"&gt;Costo&lt;/property&gt;
+      &lt;property name="SummaryType"&gt;Sum&lt;/property&gt;
+      &lt;property name="DisplayFormat"&gt;{0:c}&lt;/property&gt;
+    &lt;/property&gt;
+    &lt;property name="Item2" isnull="true" iskey="true"&gt;
+      &lt;property name="ShowInGroupColumnFooterName" /&gt;
+      &lt;property name="Tag" isnull="true" /&gt;
+      &lt;property name="FieldName"&gt;Costo por Gallina&lt;/property&gt;
+      &lt;property name="SummaryType"&gt;Average&lt;/property&gt;
+      &lt;property name="DisplayFormat"&gt;(Promedio de Costo por Gallina: {0:N})&lt;/property&gt;
+    &lt;/property&gt;
+    &lt;property name="Item3" isnull="true" iskey="true"&gt;
+      &lt;property name="ShowInGroupColumnFooterName" /&gt;
+      &lt;property name="Tag" isnull="true" /&gt;
+      &lt;property name="FieldName"&gt;Costo por Gallina&lt;/property&gt;
+      &lt;property name="SummaryType"&gt;Average&lt;/property&gt;
+      &lt;property name="DisplayFormat"&gt;(Promedio de Costo por Gallina: {0:N})&lt;/property&gt;
+    &lt;/property&gt;
+  &lt;/property&gt;
+  &lt;property name="ActiveFilterString" /&gt;
+  &lt;property name="FormatRules" iskey="true" value="0" /&gt;
+  &lt;property name="FormatConditions" iskey="true" value="0" /&gt;
+  &lt;property name="GroupSummarySortInfoState" /&gt;
+  &lt;property name="FindFilterText" /&gt;
+  &lt;property name="FindPanelVisible"&gt;false&lt;/property&gt;
+&lt;/XtraSerializer&gt;</Layout>
+      <NombreTabla>Pollitas</NombreTabla>
+    </Output>
+    <Output xsi:type="OutputGrid">
+      <Tipo>Grid</Tipo>
+      <Nombre>RECOLLECCION</Nombre>
+      <id>375a8f49-6f27-4aaa-a632-a5563a95bc1b</id>
+      <Layout>&lt;XtraSerializer version="1.0" application="View"&gt;
+  &lt;property name="#LayoutVersion" /&gt;
+  &lt;property name="#LayoutScaleFactor"&gt;@1,Width=1@1,Height=1&lt;/property&gt;
+  &lt;property name="OptionsBehavior" isnull="true" iskey="true"&gt;
+    &lt;property name="AllowAddRows"&gt;False&lt;/property&gt;
+    &lt;property name="Editable"&gt;false&lt;/property&gt;
+  &lt;/property&gt;
+  &lt;property name="OptionsSelection" isnull="true" iskey="true"&gt;
+    &lt;property name="EnableAppearanceFocusedCell"&gt;false&lt;/property&gt;
+    &lt;property name="MultiSelect"&gt;true&lt;/property&gt;
+  &lt;/property&gt;
+  &lt;property name="OptionsView" isnull="true" iskey="true"&gt;
+    &lt;property name="GroupFooterShowMode"&gt;VisibleAlways&lt;/property&gt;
+    &lt;property name="ColumnAutoWidth"&gt;false&lt;/property&gt;
+    &lt;property name="ShowAutoFilterRow"&gt;true&lt;/property&gt;
+    &lt;property name="ShowGroupedColumns"&gt;true&lt;/property&gt;
+    &lt;property name="ShowIndicator"&gt;false&lt;/property&gt;
+    &lt;property name="EnableAppearanceOddRow"&gt;true&lt;/property&gt;
+    &lt;property name="EnableAppearanceEvenRow"&gt;true&lt;/property&gt;
+  &lt;/property&gt;
+  &lt;property name="OptionsMenu" isnull="true" iskey="true"&gt;
+    &lt;property name="ShowConditionalFormattingItem"&gt;true&lt;/property&gt;
+  &lt;/property&gt;
+  &lt;property name="FixedLineWidth"&gt;2&lt;/property&gt;
+  &lt;property name="IndicatorWidth"&gt;-1&lt;/property&gt;
+  &lt;property name="ColumnPanelRowHeight"&gt;-1&lt;/property&gt;
+  &lt;property name="RowSeparatorHeight"&gt;0&lt;/property&gt;
+  &lt;property name="FooterPanelHeight"&gt;-1&lt;/property&gt;
+  &lt;property name="HorzScrollVisibility"&gt;Auto&lt;/property&gt;
+  &lt;property name="VertScrollVisibility"&gt;Auto&lt;/property&gt;
+  &lt;property name="RowHeight"&gt;-1&lt;/property&gt;
+  &lt;property name="GroupRowHeight"&gt;-1&lt;/property&gt;
+  &lt;property name="GroupFormat"&gt;{0}: [#image]{1} {2}&lt;/property&gt;
+  &lt;property name="ChildGridLevelName" /&gt;
+  &lt;property name="VertScrollTipFieldName" /&gt;
+  &lt;property name="PreviewFieldName" /&gt;
+  &lt;property name="GroupPanelText"&gt;Arrastre una columna para agrupar&lt;/property&gt;
+  &lt;property name="NewItemRowText" /&gt;
+  &lt;property name="LevelIndent"&gt;-1&lt;/property&gt;
+  &lt;property name="PreviewIndent"&gt;-1&lt;/property&gt;
+  &lt;property name="PreviewLineCount"&gt;-1&lt;/property&gt;
+  &lt;property name="ScrollStyle"&gt;LiveVertScroll, LiveHorzScroll&lt;/property&gt;
+  &lt;property name="FocusRectStyle"&gt;CellFocus&lt;/property&gt;
+  &lt;property name="HorzScrollStep"&gt;0&lt;/property&gt;
+  &lt;property name="ActiveFilterEnabled"&gt;true&lt;/property&gt;
+  &lt;property name="ViewCaptionHeight"&gt;-1&lt;/property&gt;
+  &lt;property name="Columns" iskey="true" value="31"&gt;
+    &lt;property name="Item1" isnull="true" iskey="true"&gt;
+      &lt;property name="Name"&gt;colAlmacen&lt;/property&gt;
+      &lt;property name="OptionsFilter" isnull="true" iskey="true"&gt;
+        &lt;property name="AutoFilterCondition"&gt;Contains&lt;/property&gt;
+      &lt;/property&gt;
+      &lt;property name="Caption"&gt;Almacen&lt;/property&gt;
+      &lt;property name="ImageAlignment"&gt;Near&lt;/property&gt;
+      &lt;property name="ImageIndex"&gt;-1&lt;/property&gt;
+      &lt;property name="FieldName"&gt;Almacen&lt;/property&gt;
+      &lt;property name="ColumnEditName" /&gt;
+      &lt;property name="VisibleIndex"&gt;0&lt;/property&gt;
+      &lt;property name="Visible"&gt;true&lt;/property&gt;
+      &lt;property name="Width"&gt;75&lt;/property&gt;
+      &lt;property name="AppearanceHeader" isnull="true" iskey="true"&gt;
+        &lt;property name="Options" isnull="true" iskey="true"&gt;
+          &lt;property name="UseTextOptions"&gt;true&lt;/property&gt;
+        &lt;/property&gt;
+        &lt;property name="TextOptions" isnull="true" iskey="true"&gt;
+          &lt;property name="HAlignment"&gt;Center&lt;/property&gt;
+        &lt;/property&gt;
+      &lt;/property&gt;
+      &lt;property name="DisplayFormat" isnull="true" iskey="true"&gt;
+        &lt;property name="FormatString" /&gt;
+        &lt;property name="FormatType"&gt;Numeric&lt;/property&gt;
+      &lt;/property&gt;
+      &lt;property name="MinWidth"&gt;20&lt;/property&gt;
+      &lt;property name="MaxWidth"&gt;0&lt;/property&gt;
+    &lt;/property&gt;
+    &lt;property name="Item2" isnull="true" iskey="true"&gt;
+      &lt;property name="Name"&gt;colSemana del Año&lt;/property&gt;
+      &lt;property name="Caption"&gt;Semana del Año&lt;/property&gt;
+      &lt;property name="ImageAlignment"&gt;Near&lt;/property&gt;
+      &lt;property name="ImageIndex"&gt;-1&lt;/property&gt;
+      &lt;property name="FieldName"&gt;Semana del Año&lt;/property&gt;
+      &lt;property name="ColumnEditName" /&gt;
+      &lt;property name="VisibleIndex"&gt;1&lt;/property&gt;
+      &lt;property name="Visible"&gt;true&lt;/property&gt;
+      &lt;property name="Width"&gt;75&lt;/property&gt;
+      &lt;property name="MinWidth"&gt;20&lt;/property&gt;
+      &lt;property name="MaxWidth"&gt;0&lt;/property&gt;
+    &lt;/property&gt;
+    &lt;property name="Item3" isnull="true" iskey="true"&gt;
+      &lt;property name="Name"&gt;colAño&lt;/property&gt;
+      &lt;property name="Caption"&gt;Año&lt;/property&gt;
+      &lt;property name="ImageAlignment"&gt;Near&lt;/property&gt;
+      &lt;property name="ImageIndex"&gt;-1&lt;/property&gt;
+      &lt;property name="FieldName"&gt;Año&lt;/property&gt;
+      &lt;property name="ColumnEditName" /&gt;
+      &lt;property name="VisibleIndex"&gt;2&lt;/property&gt;
+      &lt;property name="Visible"&gt;true&lt;/property&gt;
+      &lt;property name="Width"&gt;75&lt;/property&gt;
+      &lt;property name="MinWidth"&gt;20&lt;/property&gt;
+      &lt;property name="MaxWidth"&gt;0&lt;/property&gt;
+    &lt;/property&gt;
+    &lt;property name="Item4" isnull="true" iskey="true"&gt;
+      &lt;property name="Name"&gt;colGallinas&lt;/property&gt;
+      &lt;property name="Caption"&gt;Gallinas&lt;/property&gt;
+      &lt;property name="ImageAlignment"&gt;Near&lt;/property&gt;
+      &lt;property name="ImageIndex"&gt;-1&lt;/property&gt;
+      &lt;property name="FieldName"&gt;Gallinas&lt;/property&gt;
+      &lt;property name="ColumnEditName" /&gt;
+      &lt;property name="VisibleIndex"&gt;3&lt;/property&gt;
+      &lt;property name="Visible"&gt;true&lt;/property&gt;
+      &lt;property name="Width"&gt;156&lt;/property&gt;
+      &lt;property name="DisplayFormat" isnull="true" iskey="true"&gt;
+        &lt;property name="FormatString"&gt;###,##0&lt;/property&gt;
+        &lt;property name="FormatType"&gt;Numeric&lt;/property&gt;
+      &lt;/property&gt;
+      &lt;property name="MinWidth"&gt;20&lt;/property&gt;
+      &lt;property name="MaxWidth"&gt;0&lt;/property&gt;
+      &lt;property name="Summary" iskey="true" value="1"&gt;
+        &lt;property name="Item1" isnull="true" iskey="true"&gt;
+          &lt;property name="Tag" isnull="true" /&gt;
+          &lt;property name="FieldName"&gt;Gallinas&lt;/property&gt;
+          &lt;property name="SummaryType"&gt;Min&lt;/property&gt;
+          &lt;property name="DisplayFormat"&gt;{0:###,##0}&lt;/property&gt;
+        &lt;/property&gt;
+      &lt;/property&gt;
+    &lt;/property&gt;
+    &lt;property name="Item5" isnull="true" iskey="true"&gt;
+      &lt;property name="Name"&gt;colCantidad Huevos&lt;/property&gt;
+      &lt;property name="Caption"&gt;Cantidad Huevos&lt;/property&gt;
+      &lt;property name="ImageAlignment"&gt;Near&lt;/property&gt;
+      &lt;property name="ImageIndex"&gt;-1&lt;/property&gt;
+      &lt;property name="FieldName"&gt;Cantidad Huevos&lt;/property&gt;
+      &lt;property name="ColumnEditName" /&gt;
+      &lt;property name="Width"&gt;100&lt;/property&gt;
+      &lt;property name="DisplayFormat" isnull="true" iskey="true"&gt;
+        &lt;property name="FormatString"&gt;###,##0&lt;/property&gt;
+        &lt;property name="FormatType"&gt;Numeric&lt;/property&gt;
+      &lt;/property&gt;
+      &lt;property name="MinWidth"&gt;20&lt;/property&gt;
+      &lt;property name="MaxWidth"&gt;0&lt;/property&gt;
+      &lt;property name="Summary" iskey="true" value="1"&gt;
+        &lt;property name="Item1" isnull="true" iskey="true"&gt;
+          &lt;property name="Tag" isnull="true" /&gt;
+          &lt;property name="FieldName"&gt;Cantidad Huevos&lt;/property&gt;
+          &lt;property name="SummaryType"&gt;Sum&lt;/property&gt;
+          &lt;property name="DisplayFormat"&gt;{0:###,##0}&lt;/property&gt;
+        &lt;/property&gt;
+      &lt;/property&gt;
+    &lt;/property&gt;
+    &lt;property name="Item6" isnull="true" iskey="true"&gt;
+      &lt;property name="Name"&gt;col% Postura&lt;/property&gt;
+      &lt;property name="Caption"&gt;% Postura&lt;/property&gt;
+      &lt;property name="ImageAlignment"&gt;Near&lt;/property&gt;
+      &lt;property name="ImageIndex"&gt;-1&lt;/property&gt;
+      &lt;property name="FieldName"&gt;% Postura&lt;/property&gt;
+      &lt;property name="ColumnEditName" /&gt;
+      &lt;property name="VisibleIndex"&gt;7&lt;/property&gt;
+      &lt;property name="Visible"&gt;true&lt;/property&gt;
+      &lt;property name="Width"&gt;208&lt;/property&gt;
+      &lt;property name="DisplayFormat" isnull="true" iskey="true"&gt;
+        &lt;property name="FormatString"&gt;N&lt;/property&gt;
+        &lt;property name="FormatType"&gt;Numeric&lt;/property&gt;
+      &lt;/property&gt;
+      &lt;property name="MinWidth"&gt;20&lt;/property&gt;
+      &lt;property name="MaxWidth"&gt;0&lt;/property&gt;
+      &lt;property name="Summary" iskey="true" value="1"&gt;
+        &lt;property name="Item1" isnull="true" iskey="true"&gt;
+          &lt;property name="Tag" isnull="true" /&gt;
+          &lt;property name="FieldName"&gt;% Postura&lt;/property&gt;
+          &lt;property name="SummaryType"&gt;Average&lt;/property&gt;
+          &lt;property name="DisplayFormat"&gt;{0:N}&lt;/property&gt;
+        &lt;/property&gt;
+      &lt;/property&gt;
+    &lt;/property&gt;
+    &lt;property name="Item7" isnull="true" iskey="true"&gt;
+      &lt;property name="Name"&gt;colCajas&lt;/property&gt;
+      &lt;property name="Caption"&gt;Cajas&lt;/property&gt;
+      &lt;property name="ImageAlignment"&gt;Near&lt;/property&gt;
+      &lt;property name="ImageIndex"&gt;-1&lt;/property&gt;
+      &lt;property name="FieldName"&gt;Cajas&lt;/property&gt;
+      &lt;property name="ColumnEditName" /&gt;
+      &lt;property name="Width"&gt;75&lt;/property&gt;
+      &lt;property name="DisplayFormat" isnull="true" iskey="true"&gt;
+        &lt;property name="FormatString"&gt;###,##0&lt;/property&gt;
+        &lt;property name="FormatType"&gt;Numeric&lt;/property&gt;
+      &lt;/property&gt;
+      &lt;property name="MinWidth"&gt;20&lt;/property&gt;
+      &lt;property name="MaxWidth"&gt;0&lt;/property&gt;
+      &lt;property name="Summary" iskey="true" value="1"&gt;
+        &lt;property name="Item1" isnull="true" iskey="true"&gt;
+          &lt;property name="Tag" isnull="true" /&gt;
+          &lt;property name="FieldName"&gt;Cajas&lt;/property&gt;
+          &lt;property name="SummaryType"&gt;Sum&lt;/property&gt;
+          &lt;property name="DisplayFormat"&gt;{0:###,##0}&lt;/property&gt;
+        &lt;/property&gt;
+      &lt;/property&gt;
+    &lt;/property&gt;
+    &lt;property name="Item8" isnull="true" iskey="true"&gt;
+      &lt;property name="Name"&gt;colCosto Total&lt;/property&gt;
+      &lt;property name="Caption"&gt;Costo Total&lt;/property&gt;
+      &lt;property name="ImageAlignment"&gt;Near&lt;/property&gt;
+      &lt;property name="ImageIndex"&gt;-1&lt;/property&gt;
+      &lt;property name="FieldName"&gt;Costo Total&lt;/property&gt;
+      &lt;property name="ColumnEditName" /&gt;
+      &lt;property name="Width"&gt;75&lt;/property&gt;
+      &lt;property name="DisplayFormat" isnull="true" iskey="true"&gt;
+        &lt;property name="FormatString"&gt;c&lt;/property&gt;
+        &lt;property name="FormatType"&gt;Numeric&lt;/property&gt;
+      &lt;/property&gt;
+      &lt;property name="MinWidth"&gt;20&lt;/property&gt;
+      &lt;property name="MaxWidth"&gt;0&lt;/property&gt;
+      &lt;property name="Summary" iskey="true" value="1"&gt;
+        &lt;property name="Item1" isnull="true" iskey="true"&gt;
+          &lt;property name="Tag" isnull="true" /&gt;
+          &lt;property name="FieldName"&gt;Costo Total&lt;/property&gt;
+          &lt;property name="SummaryType"&gt;Sum&lt;/property&gt;
+          &lt;property name="DisplayFormat"&gt;{0:c}&lt;/property&gt;
+        &lt;/property&gt;
+      &lt;/property&gt;
+    &lt;/property&gt;
+    &lt;property name="Item9" isnull="true" iskey="true"&gt;
+      &lt;property name="Name"&gt;colCosto por Gallina&lt;/property&gt;
+      &lt;property name="Caption"&gt;Costo por Gallina&lt;/property&gt;
+      &lt;property name="ImageAlignment"&gt;Near&lt;/property&gt;
+      &lt;property name="ImageIndex"&gt;-1&lt;/property&gt;
+      &lt;property name="FieldName"&gt;Costo por Gallina&lt;/property&gt;
+      &lt;property name="ColumnEditName" /&gt;
+      &lt;property name="Width"&gt;95&lt;/property&gt;
+      &lt;property name="DisplayFormat" isnull="true" iskey="true"&gt;
+        &lt;property name="FormatString"&gt;c&lt;/property&gt;
+        &lt;property name="FormatType"&gt;Numeric&lt;/property&gt;
+      &lt;/property&gt;
+      &lt;property name="MinWidth"&gt;20&lt;/property&gt;
+      &lt;property name="MaxWidth"&gt;0&lt;/property&gt;
+      &lt;property name="Summary" iskey="true" value="1"&gt;
+        &lt;property name="Item1" isnull="true" iskey="true"&gt;
+          &lt;property name="Tag" isnull="true" /&gt;
+          &lt;property name="FieldName"&gt;Costo por Gallina&lt;/property&gt;
+          &lt;property name="SummaryType"&gt;Sum&lt;/property&gt;
+          &lt;property name="DisplayFormat"&gt;{0:c}&lt;/property&gt;
+        &lt;/property&gt;
+      &lt;/property&gt;
+    &lt;/property&gt;
+    &lt;property name="Item10" isnull="true" iskey="true"&gt;
+      &lt;property name="Name"&gt;colMuertes&lt;/property&gt;
+      &lt;property name="Caption"&gt;Muertes&lt;/property&gt;
+      &lt;property name="ImageAlignment"&gt;Near&lt;/property&gt;
+      &lt;property name="ImageIndex"&gt;-1&lt;/property&gt;
+      &lt;property name="FieldName"&gt;Muertes&lt;/property&gt;
+      &lt;property name="ColumnEditName" /&gt;
+      &lt;property name="VisibleIndex"&gt;4&lt;/property&gt;
+      &lt;property name="Visible"&gt;true&lt;/property&gt;
+      &lt;property name="Width"&gt;75&lt;/property&gt;
+      &lt;property name="DisplayFormat" isnull="true" iskey="true"&gt;
+        &lt;property name="FormatString"&gt;###,##0&lt;/property&gt;
+        &lt;property name="FormatType"&gt;Numeric&lt;/property&gt;
+      &lt;/property&gt;
+      &lt;property name="MinWidth"&gt;20&lt;/property&gt;
+      &lt;property name="MaxWidth"&gt;0&lt;/property&gt;
+      &lt;property name="Summary" iskey="true" value="1"&gt;
+        &lt;property name="Item1" isnull="true" iskey="true"&gt;
+          &lt;property name="Tag" isnull="true" /&gt;
+          &lt;property name="FieldName"&gt;Muertes&lt;/property&gt;
+          &lt;property name="SummaryType"&gt;Sum&lt;/property&gt;
+          &lt;property name="DisplayFormat"&gt;{0:###,##0}&lt;/property&gt;
+        &lt;/property&gt;
+      &lt;/property&gt;
+    &lt;/property&gt;
+    &lt;property name="Item11" isnull="true" iskey="true"&gt;
+      &lt;property name="Name"&gt;colPerdida por Muerte&lt;/property&gt;
+      &lt;property name="Caption"&gt;Perdida por Muerte&lt;/property&gt;
+      &lt;property name="ImageAlignment"&gt;Near&lt;/property&gt;
+      &lt;property name="ImageIndex"&gt;-1&lt;/property&gt;
+      &lt;property name="FieldName"&gt;Perdida por Muerte&lt;/property&gt;
+      &lt;property name="ColumnEditName" /&gt;
+      &lt;property name="VisibleIndex"&gt;6&lt;/property&gt;
+      &lt;property name="Visible"&gt;true&lt;/property&gt;
+      &lt;property name="Width"&gt;75&lt;/property&gt;
+      &lt;property name="DisplayFormat" isnull="true" iskey="true"&gt;
+        &lt;property name="FormatString"&gt;c&lt;/property&gt;
+        &lt;property name="FormatType"&gt;Numeric&lt;/property&gt;
+      &lt;/property&gt;
+      &lt;property name="MinWidth"&gt;20&lt;/property&gt;
+      &lt;property name="MaxWidth"&gt;0&lt;/property&gt;
+      &lt;property name="Summary" iskey="true" value="1"&gt;
+        &lt;property name="Item1" isnull="true" iskey="true"&gt;
+          &lt;property name="Tag" isnull="true" /&gt;
+          &lt;property name="FieldName"&gt;Perdida por Muerte&lt;/property&gt;
+          &lt;property name="SummaryType"&gt;Sum&lt;/property&gt;
+          &lt;property name="DisplayFormat"&gt;{0:c}&lt;/property&gt;
+        &lt;/property&gt;
+      &lt;/property&gt;
+    &lt;/property&gt;
+    &lt;property name="Item12" isnull="true" iskey="true"&gt;
+      &lt;property name="Name"&gt;col% Mortalidad&lt;/property&gt;
+      &lt;property name="Caption"&gt;% Mortalidad&lt;/property&gt;
+      &lt;property name="ImageAlignment"&gt;Near&lt;/property&gt;
+      &lt;property name="ImageIndex"&gt;-1&lt;/property&gt;
+      &lt;property name="FieldName"&gt;% Mortalidad&lt;/property&gt;
+      &lt;property name="ColumnEditName" /&gt;
+      &lt;property name="VisibleIndex"&gt;5&lt;/property&gt;
+      &lt;property name="Visible"&gt;true&lt;/property&gt;
+      &lt;property name="Width"&gt;75&lt;/property&gt;
+      &lt;property name="DisplayFormat" isnull="true" iskey="true"&gt;
+        &lt;property name="FormatString"&gt;P&lt;/property&gt;
+        &lt;property name="FormatType"&gt;Numeric&lt;/property&gt;
+      &lt;/property&gt;
+      &lt;property name="MinWidth"&gt;20&lt;/property&gt;
+      &lt;property name="MaxWidth"&gt;0&lt;/property&gt;
+      &lt;property name="Summary" iskey="true" value="1"&gt;
+        &lt;property name="Item1" isnull="true" iskey="true"&gt;
+          &lt;property name="Tag" isnull="true" /&gt;
+          &lt;property name="FieldName"&gt;% Mortalidad&lt;/property&gt;
+          &lt;property name="SummaryType"&gt;Sum&lt;/property&gt;
+          &lt;property name="DisplayFormat"&gt;{0:P}&lt;/property&gt;
+        &lt;/property&gt;
+      &lt;/property&gt;
+    &lt;/property&gt;
+    &lt;property name="Item13" isnull="true" iskey="true"&gt;
+      &lt;property name="Name"&gt;colCosto por %Podtura&lt;/property&gt;
+      &lt;property name="Caption"&gt;Costo por %Podtura&lt;/property&gt;
+      &lt;property name="ImageAlignment"&gt;Near&lt;/property&gt;
+      &lt;property name="ImageIndex"&gt;-1&lt;/property&gt;
+      &lt;property name="FieldName"&gt;Costo por %Podtura&lt;/property&gt;
+      &lt;property name="ColumnEditName" /&gt;
+      &lt;property name="Width"&gt;120&lt;/property&gt;
+      &lt;property name="DisplayFormat" isnull="true" iskey="true"&gt;
+        &lt;property name="FormatString"&gt;c&lt;/property&gt;
+        &lt;property name="FormatType"&gt;Numeric&lt;/property&gt;
+      &lt;/property&gt;
+      &lt;property name="MinWidth"&gt;20&lt;/property&gt;
+      &lt;property name="MaxWidth"&gt;0&lt;/property&gt;
+      &lt;property name="Summary" iskey="true" value="1"&gt;
+        &lt;property name="Item1" isnull="true" iskey="true"&gt;
+          &lt;property name="Tag" isnull="true" /&gt;
+          &lt;property name="FieldName"&gt;Costo por %Podtura&lt;/property&gt;
+          &lt;property name="SummaryType"&gt;Average&lt;/property&gt;
+          &lt;property name="DisplayFormat"&gt;{0:c}&lt;/property&gt;
+        &lt;/property&gt;
+      &lt;/property&gt;
+    &lt;/property&gt;
+    &lt;property name="Item14" isnull="true" iskey="true"&gt;
+      &lt;property name="Name"&gt;colKilos&lt;/property&gt;
+      &lt;property name="Caption"&gt;Kilos Recolectados&lt;/property&gt;
+      &lt;property name="ImageAlignment"&gt;Near&lt;/property&gt;
+      &lt;property name="ImageIndex"&gt;-1&lt;/property&gt;
+      &lt;property name="FieldName"&gt;Kilos&lt;/property&gt;
+      &lt;property name="ColumnEditName" /&gt;
+      &lt;property name="Width"&gt;75&lt;/property&gt;
+      &lt;property name="DisplayFormat" isnull="true" iskey="true"&gt;
+        &lt;property name="FormatString"&gt;N&lt;/property&gt;
+        &lt;property name="FormatType"&gt;Numeric&lt;/property&gt;
+      &lt;/property&gt;
+      &lt;property name="MinWidth"&gt;20&lt;/property&gt;
+      &lt;property name="MaxWidth"&gt;0&lt;/property&gt;
+      &lt;property name="Summary" iskey="true" value="1"&gt;
+        &lt;property name="Item1" isnull="true" iskey="true"&gt;
+          &lt;property name="Tag" isnull="true" /&gt;
+          &lt;property name="FieldName"&gt;Kilos&lt;/property&gt;
+          &lt;property name="SummaryType"&gt;Sum&lt;/property&gt;
+          &lt;property name="DisplayFormat"&gt;{0:N}&lt;/property&gt;
+        &lt;/property&gt;
+      &lt;/property&gt;
+    &lt;/property&gt;
+    &lt;property name="Item15" isnull="true" iskey="true"&gt;
+      &lt;property name="Name"&gt;colKilos por Caja&lt;/property&gt;
+      &lt;property name="Caption"&gt;Kilos por Caja&lt;/property&gt;
+      &lt;property name="ImageAlignment"&gt;Near&lt;/property&gt;
+      &lt;property name="ImageIndex"&gt;-1&lt;/property&gt;
+      &lt;property name="FieldName"&gt;Kilos por Caja&lt;/property&gt;
+      &lt;property name="ColumnEditName" /&gt;
+      &lt;property name="VisibleIndex"&gt;8&lt;/property&gt;
+      &lt;property name="Visible"&gt;true&lt;/property&gt;
+      &lt;property name="Width"&gt;204&lt;/property&gt;
+      &lt;property name="DisplayFormat" isnull="true" iskey="true"&gt;
+        &lt;property name="FormatString"&gt;N&lt;/property&gt;
+        &lt;property name="FormatType"&gt;Numeric&lt;/property&gt;
+      &lt;/property&gt;
+      &lt;property name="MinWidth"&gt;20&lt;/property&gt;
+      &lt;property name="MaxWidth"&gt;0&lt;/property&gt;
+      &lt;property name="Summary" iskey="true" value="1"&gt;
+        &lt;property name="Item1" isnull="true" iskey="true"&gt;
+          &lt;property name="Tag" isnull="true" /&gt;
+          &lt;property name="FieldName"&gt;Kilos por Caja&lt;/property&gt;
+          &lt;property name="SummaryType"&gt;Average&lt;/property&gt;
+          &lt;property name="DisplayFormat"&gt;{0:N}&lt;/property&gt;
+        &lt;/property&gt;
+      &lt;/property&gt;
+    &lt;/property&gt;
+    &lt;property name="Item16" isnull="true" iskey="true"&gt;
+      &lt;property name="Name"&gt;colAlimento Consumido&lt;/property&gt;
+      &lt;property name="Caption"&gt;Alimento Consumido&lt;/property&gt;
+      &lt;property name="ImageAlignment"&gt;Near&lt;/property&gt;
+      &lt;property name="ImageIndex"&gt;-1&lt;/property&gt;
+      &lt;property name="FieldName"&gt;Alimento Consumido&lt;/property&gt;
+      &lt;property name="ColumnEditName" /&gt;
+      &lt;property name="Width"&gt;75&lt;/property&gt;
+      &lt;property name="DisplayFormat" isnull="true" iskey="true"&gt;
+        &lt;property name="FormatString"&gt;N&lt;/property&gt;
+        &lt;property name="FormatType"&gt;Numeric&lt;/property&gt;
+      &lt;/property&gt;
+      &lt;property name="MinWidth"&gt;20&lt;/property&gt;
+      &lt;property name="MaxWidth"&gt;0&lt;/property&gt;
+      &lt;property name="Summary" iskey="true" value="1"&gt;
+        &lt;property name="Item1" isnull="true" iskey="true"&gt;
+          &lt;property name="Tag" isnull="true" /&gt;
+          &lt;property name="FieldName"&gt;Alimento Consumido&lt;/property&gt;
+          &lt;property name="SummaryType"&gt;Sum&lt;/property&gt;
+          &lt;property name="DisplayFormat"&gt;{0:N}&lt;/property&gt;
+        &lt;/property&gt;
+      &lt;/property&gt;
+    &lt;/property&gt;
+    &lt;property name="Item17" isnull="true" iskey="true"&gt;
+      &lt;property name="Name"&gt;colAlimento por Gallina&lt;/property&gt;
+      &lt;property name="Caption"&gt;Alimento por Gallina&lt;/property&gt;
+      &lt;property name="ImageAlignment"&gt;Near&lt;/property&gt;
+      &lt;property name="ImageIndex"&gt;-1&lt;/property&gt;
+      &lt;property name="FieldName"&gt;Alimento por Gallina&lt;/property&gt;
+      &lt;property name="ColumnEditName" /&gt;
+      &lt;property name="VisibleIndex"&gt;9&lt;/property&gt;
+      &lt;property name="Visible"&gt;true&lt;/property&gt;
+      &lt;property name="Width"&gt;88&lt;/property&gt;
+      &lt;property name="DisplayFormat" isnull="true" iskey="true"&gt;
+        &lt;property name="FormatString"&gt;N&lt;/property&gt;
+        &lt;property name="FormatType"&gt;Numeric&lt;/property&gt;
+      &lt;/property&gt;
+      &lt;property name="MinWidth"&gt;20&lt;/property&gt;
+      &lt;property name="MaxWidth"&gt;0&lt;/property&gt;
+      &lt;property name="Summary" iskey="true" value="1"&gt;
+        &lt;property name="Item1" isnull="true" iskey="true"&gt;
+          &lt;property name="Tag" isnull="true" /&gt;
+          &lt;property name="FieldName"&gt;Alimento por Gallina&lt;/property&gt;
+          &lt;property name="SummaryType"&gt;Sum&lt;/property&gt;
+          &lt;property name="DisplayFormat"&gt;{0:N}&lt;/property&gt;
+        &lt;/property&gt;
+      &lt;/property&gt;
+    &lt;/property&gt;
+    &lt;property name="Item18" isnull="true" iskey="true"&gt;
+      &lt;property name="Name"&gt;colConversion Alimenticia&lt;/property&gt;
+      &lt;property name="Caption"&gt;Conversion Alimenticia&lt;/property&gt;
+      &lt;property name="ImageAlignment"&gt;Near&lt;/property&gt;
+      &lt;property name="ImageIndex"&gt;-1&lt;/property&gt;
+      &lt;property name="FieldName"&gt;Conversion Alimenticia&lt;/property&gt;
+      &lt;property name="ColumnEditName" /&gt;
+      &lt;property name="VisibleIndex"&gt;11&lt;/property&gt;
+      &lt;property name="Visible"&gt;true&lt;/property&gt;
+      &lt;property name="Width"&gt;247&lt;/property&gt;
+      &lt;property name="DisplayFormat" isnull="true" iskey="true"&gt;
+        &lt;property name="FormatString"&gt;N&lt;/property&gt;
+        &lt;property name="FormatType"&gt;Numeric&lt;/property&gt;
+      &lt;/property&gt;
+      &lt;property name="MinWidth"&gt;20&lt;/property&gt;
+      &lt;property name="MaxWidth"&gt;0&lt;/property&gt;
+      &lt;property name="Summary" iskey="true" value="1"&gt;
+        &lt;property name="Item1" isnull="true" iskey="true"&gt;
+          &lt;property name="Tag" isnull="true" /&gt;
+          &lt;property name="FieldName"&gt;Conversion Alimenticia&lt;/property&gt;
+          &lt;property name="SummaryType"&gt;Average&lt;/property&gt;
+          &lt;property name="DisplayFormat"&gt;{0:N}&lt;/property&gt;
+        &lt;/property&gt;
+      &lt;/property&gt;
+    &lt;/property&gt;
+    &lt;property name="Item19" isnull="true" iskey="true"&gt;
+      &lt;property name="Name"&gt;colCosto Alimento Consumido&lt;/property&gt;
+      &lt;property name="Caption"&gt;Costo Alimento Consumido&lt;/property&gt;
+      &lt;property name="ImageAlignment"&gt;Near&lt;/property&gt;
+      &lt;property name="ImageIndex"&gt;-1&lt;/property&gt;
+      &lt;property name="FieldName"&gt;Costo Alimento Consumido&lt;/property&gt;
+      &lt;property name="ColumnEditName" /&gt;
+      &lt;property name="Width"&gt;75&lt;/property&gt;
+      &lt;property name="DisplayFormat" isnull="true" iskey="true"&gt;
+        &lt;property name="FormatString"&gt;c&lt;/property&gt;
+        &lt;property name="FormatType"&gt;Numeric&lt;/property&gt;
+      &lt;/property&gt;
+      &lt;property name="MinWidth"&gt;20&lt;/property&gt;
+      &lt;property name="MaxWidth"&gt;0&lt;/property&gt;
+      &lt;property name="Summary" iskey="true" value="1"&gt;
+        &lt;property name="Item1" isnull="true" iskey="true"&gt;
+          &lt;property name="Tag" isnull="true" /&gt;
+          &lt;property name="FieldName"&gt;Costo Alimento Consumido&lt;/property&gt;
+          &lt;property name="SummaryType"&gt;Sum&lt;/property&gt;
+          &lt;property name="DisplayFormat"&gt;{0:c}&lt;/property&gt;
+        &lt;/property&gt;
+      &lt;/property&gt;
+    &lt;/property&gt;
+    &lt;property name="Item20" isnull="true" iskey="true"&gt;
+      &lt;property name="Name"&gt;colCosto Conversion Alimenticia&lt;/property&gt;
+      &lt;property name="Caption"&gt;Costo Conversion Alimenticia&lt;/property&gt;
+      &lt;property name="ImageAlignment"&gt;Near&lt;/property&gt;
+      &lt;property name="ImageIndex"&gt;-1&lt;/property&gt;
+      &lt;property name="FieldName"&gt;Costo Conversion Alimenticia&lt;/property&gt;
+      &lt;property name="ColumnEditName" /&gt;
+      &lt;property name="VisibleIndex"&gt;12&lt;/property&gt;
+      &lt;property name="Visible"&gt;true&lt;/property&gt;
+      &lt;property name="Width"&gt;258&lt;/property&gt;
+      &lt;property name="DisplayFormat" isnull="true" iskey="true"&gt;
+        &lt;property name="FormatString"&gt;c&lt;/property&gt;
+        &lt;property name="FormatType"&gt;Numeric&lt;/property&gt;
+      &lt;/property&gt;
+      &lt;property name="MinWidth"&gt;20&lt;/property&gt;
+      &lt;property name="MaxWidth"&gt;0&lt;/property&gt;
+      &lt;property name="Summary" iskey="true" value="1"&gt;
+        &lt;property name="Item1" isnull="true" iskey="true"&gt;
+          &lt;property name="Tag" isnull="true" /&gt;
+          &lt;property name="FieldName"&gt;Costo Conversion Alimenticia&lt;/property&gt;
+          &lt;property name="SummaryType"&gt;Average&lt;/property&gt;
+          &lt;property name="DisplayFormat"&gt;{0:c}&lt;/property&gt;
+        &lt;/property&gt;
+      &lt;/property&gt;
+    &lt;/property&gt;
+    &lt;property name="Item21" isnull="true" iskey="true"&gt;
+      &lt;property name="Name"&gt;col Costo Alimento por Gallina&lt;/property&gt;
+      &lt;property name="Caption"&gt; Costo Alimento por Gallina&lt;/property&gt;
+      &lt;property name="ImageAlignment"&gt;Near&lt;/property&gt;
+      &lt;property name="ImageIndex"&gt;-1&lt;/property&gt;
+      &lt;property name="FieldName"&gt; Costo Alimento por Gallina&lt;/property&gt;
+      &lt;property name="ColumnEditName" /&gt;
+      &lt;property name="VisibleIndex"&gt;10&lt;/property&gt;
+      &lt;property name="Visible"&gt;true&lt;/property&gt;
+      &lt;property name="Width"&gt;135&lt;/property&gt;
+      &lt;property name="DisplayFormat" isnull="true" iskey="true"&gt;
+        &lt;property name="FormatString"&gt;c&lt;/property&gt;
+        &lt;property name="FormatType"&gt;Numeric&lt;/property&gt;
+      &lt;/property&gt;
+      &lt;property name="MinWidth"&gt;20&lt;/property&gt;
+      &lt;property name="MaxWidth"&gt;0&lt;/property&gt;
+      &lt;property name="Summary" iskey="true" value="1"&gt;
+        &lt;property name="Item1" isnull="true" iskey="true"&gt;
+          &lt;property name="Tag" isnull="true" /&gt;
+          &lt;property name="FieldName"&gt; Costo Alimento por Gallina&lt;/property&gt;
+          &lt;property name="SummaryType"&gt;Sum&lt;/property&gt;
+          &lt;property name="DisplayFormat"&gt;{0:c}&lt;/property&gt;
+        &lt;/property&gt;
+      &lt;/property&gt;
+    &lt;/property&gt;
+    &lt;property name="Item22" isnull="true" iskey="true"&gt;
+      &lt;property name="Name"&gt;colComplemto Alimenticio&lt;/property&gt;
+      &lt;property name="Caption"&gt;Costo Complemto Alimenticio&lt;/property&gt;
+      &lt;property name="ImageAlignment"&gt;Near&lt;/property&gt;
+      &lt;property name="ImageIndex"&gt;-1&lt;/property&gt;
+      &lt;property name="FieldName"&gt;Complemto Alimenticio&lt;/property&gt;
+      &lt;property name="ColumnEditName" /&gt;
+      &lt;property name="Width"&gt;75&lt;/property&gt;
+      &lt;property name="DisplayFormat" isnull="true" iskey="true"&gt;
+        &lt;property name="FormatString"&gt;c&lt;/property&gt;
+        &lt;property name="FormatType"&gt;Numeric&lt;/property&gt;
+      &lt;/property&gt;
+      &lt;property name="MinWidth"&gt;20&lt;/property&gt;
+      &lt;property name="MaxWidth"&gt;0&lt;/property&gt;
+      &lt;property name="Summary" iskey="true" value="1"&gt;
+        &lt;property name="Item1" isnull="true" iskey="true"&gt;
+          &lt;property name="Tag" isnull="true" /&gt;
+          &lt;property name="FieldName"&gt;Complemto Alimenticio&lt;/property&gt;
+          &lt;property name="SummaryType"&gt;Sum&lt;/property&gt;
+          &lt;property name="DisplayFormat"&gt;{0:c}&lt;/property&gt;
+        &lt;/property&gt;
+      &lt;/property&gt;
+    &lt;/property&gt;
+    &lt;property name="Item23" isnull="true" iskey="true"&gt;
+      &lt;property name="Name"&gt;colComplemto Alimenticio por Gallina&lt;/property&gt;
+      &lt;property name="Caption"&gt;Costo Complemto Alimenticio por Gallina&lt;/property&gt;
+      &lt;property name="ImageAlignment"&gt;Near&lt;/property&gt;
+      &lt;property name="ImageIndex"&gt;-1&lt;/property&gt;
+      &lt;property name="FieldName"&gt;Complemto Alimenticio por Gallina&lt;/property&gt;
+      &lt;property name="ColumnEditName" /&gt;
+      &lt;property name="VisibleIndex"&gt;13&lt;/property&gt;
+      &lt;property name="Visible"&gt;true&lt;/property&gt;
+      &lt;property name="Width"&gt;111&lt;/property&gt;
+      &lt;property name="DisplayFormat" isnull="true" iskey="true"&gt;
+        &lt;property name="FormatString"&gt;c&lt;/property&gt;
+        &lt;property name="FormatType"&gt;Numeric&lt;/property&gt;
+      &lt;/property&gt;
+      &lt;property name="MinWidth"&gt;20&lt;/property&gt;
+      &lt;property name="MaxWidth"&gt;0&lt;/property&gt;
+      &lt;property name="Summary" iskey="true" value="1"&gt;
+        &lt;property name="Item1" isnull="true" iskey="true"&gt;
+          &lt;property name="Tag" isnull="true" /&gt;
+          &lt;property name="FieldName"&gt;Complemto Alimenticio por Gallina&lt;/property&gt;
+          &lt;property name="SummaryType"&gt;Sum&lt;/property&gt;
+          &lt;property name="DisplayFormat"&gt;{0:c}&lt;/property&gt;
+        &lt;/property&gt;
+      &lt;/property&gt;
+    &lt;/property&gt;
+    &lt;property name="Item24" isnull="true" iskey="true"&gt;
+      &lt;property name="Name"&gt;colMed Preventivo&lt;/property&gt;
+      &lt;property name="Caption"&gt;Costo Medicamento Preventivo&lt;/property&gt;
+      &lt;property name="ImageAlignment"&gt;Near&lt;/property&gt;
+      &lt;property name="ImageIndex"&gt;-1&lt;/property&gt;
+      &lt;property name="FieldName"&gt;Med Preventivo&lt;/property&gt;
+      &lt;property name="ColumnEditName" /&gt;
+      &lt;property name="Width"&gt;75&lt;/property&gt;
+      &lt;property name="DisplayFormat" isnull="true" iskey="true"&gt;
+        &lt;property name="FormatString"&gt;c&lt;/property&gt;
+        &lt;property name="FormatType"&gt;Numeric&lt;/property&gt;
+      &lt;/property&gt;
+      &lt;property name="MinWidth"&gt;20&lt;/property&gt;
+      &lt;property name="MaxWidth"&gt;0&lt;/property&gt;
+      &lt;property name="Summary" iskey="true" value="1"&gt;
+        &lt;property name="Item1" isnull="true" iskey="true"&gt;
+          &lt;property name="Tag" isnull="true" /&gt;
+          &lt;property name="FieldName"&gt;Med Preventivo&lt;/property&gt;
+          &lt;property name="SummaryType"&gt;Sum&lt;/property&gt;
+          &lt;property name="DisplayFormat"&gt;{0:c}&lt;/property&gt;
+        &lt;/property&gt;
+      &lt;/property&gt;
+    &lt;/property&gt;
+    &lt;property name="Item25" isnull="true" iskey="true"&gt;
+      &lt;property name="Name"&gt;colMed Preventivo por Gallina&lt;/property&gt;
+      &lt;property name="Caption"&gt;Costo Medicamento Preventivo por Gallina&lt;/property&gt;
+      &lt;property name="ImageAlignment"&gt;Near&lt;/property&gt;
+      &lt;property name="ImageIndex"&gt;-1&lt;/property&gt;
+      &lt;property name="FieldName"&gt;Med Preventivo por Gallina&lt;/property&gt;
+      &lt;property name="ColumnEditName" /&gt;
+      &lt;property name="VisibleIndex"&gt;14&lt;/property&gt;
+      &lt;property name="Visible"&gt;true&lt;/property&gt;
+      &lt;property name="Width"&gt;160&lt;/property&gt;
+      &lt;property name="DisplayFormat" isnull="true" iskey="true"&gt;
+        &lt;property name="FormatString"&gt;c&lt;/property&gt;
+        &lt;property name="FormatType"&gt;Numeric&lt;/property&gt;
+      &lt;/property&gt;
+      &lt;property name="MinWidth"&gt;20&lt;/property&gt;
+      &lt;property name="MaxWidth"&gt;0&lt;/property&gt;
+      &lt;property name="Summary" iskey="true" value="1"&gt;
+        &lt;property name="Item1" isnull="true" iskey="true"&gt;
+          &lt;property name="Tag" isnull="true" /&gt;
+          &lt;property name="FieldName"&gt;Med Preventivo por Gallina&lt;/property&gt;
+          &lt;property name="SummaryType"&gt;Sum&lt;/property&gt;
+          &lt;property name="DisplayFormat"&gt;{0:c}&lt;/property&gt;
+        &lt;/property&gt;
+      &lt;/property&gt;
+    &lt;/property&gt;
+    &lt;property name="Item26" isnull="true" iskey="true"&gt;
+      &lt;property name="Name"&gt;colMaterial Veterianrio&lt;/property&gt;
+      &lt;property name="Caption"&gt;Costo Material Veterianrio&lt;/property&gt;
+      &lt;property name="ImageAlignment"&gt;Near&lt;/property&gt;
+      &lt;property name="ImageIndex"&gt;-1&lt;/property&gt;
+      &lt;property name="FieldName"&gt;Material Veterianrio&lt;/property&gt;
+      &lt;property name="ColumnEditName" /&gt;
+      &lt;property name="Width"&gt;75&lt;/property&gt;
+      &lt;property name="DisplayFormat" isnull="true" iskey="true"&gt;
+        &lt;property name="FormatString"&gt;c&lt;/property&gt;
+        &lt;property name="FormatType"&gt;Numeric&lt;/property&gt;
+      &lt;/property&gt;
+      &lt;property name="MinWidth"&gt;20&lt;/property&gt;
+      &lt;property name="MaxWidth"&gt;0&lt;/property&gt;
+      &lt;property name="Summary" iskey="true" value="1"&gt;
+        &lt;property name="Item1" isnull="true" iskey="true"&gt;
+          &lt;property name="Tag" isnull="true" /&gt;
+          &lt;property name="FieldName"&gt;Material Veterianrio&lt;/property&gt;
+          &lt;property name="SummaryType"&gt;Sum&lt;/property&gt;
+          &lt;property name="DisplayFormat"&gt;{0:c}&lt;/property&gt;
+        &lt;/property&gt;
+      &lt;/property&gt;
+    &lt;/property&gt;
+    &lt;property name="Item27" isnull="true" iskey="true"&gt;
+      &lt;property name="Name"&gt;colMat Vet por Gallina&lt;/property&gt;
+      &lt;property name="Caption"&gt;Costo Mat Vet por Gallina&lt;/property&gt;
+      &lt;property name="ImageAlignment"&gt;Near&lt;/property&gt;
+      &lt;property name="ImageIndex"&gt;-1&lt;/property&gt;
+      &lt;property name="FieldName"&gt;Mat Vet por Gallina&lt;/property&gt;
+      &lt;property name="ColumnEditName" /&gt;
+      &lt;property name="VisibleIndex"&gt;15&lt;/property&gt;
+      &lt;property name="Visible"&gt;true&lt;/property&gt;
+      &lt;property name="Width"&gt;75&lt;/property&gt;
+      &lt;property name="DisplayFormat" isnull="true" iskey="true"&gt;
+        &lt;property name="FormatString"&gt;c&lt;/property&gt;
+        &lt;property name="FormatType"&gt;Numeric&lt;/property&gt;
+      &lt;/property&gt;
+      &lt;property name="MinWidth"&gt;20&lt;/property&gt;
+      &lt;property name="MaxWidth"&gt;0&lt;/property&gt;
+      &lt;property name="Summary" iskey="true" value="1"&gt;
+        &lt;property name="Item1" isnull="true" iskey="true"&gt;
+          &lt;property name="Tag" isnull="true" /&gt;
+          &lt;property name="FieldName"&gt;Mat Vet por Gallina&lt;/property&gt;
+          &lt;property name="SummaryType"&gt;Sum&lt;/property&gt;
+          &lt;property name="DisplayFormat"&gt;{0:c}&lt;/property&gt;
+        &lt;/property&gt;
+      &lt;/property&gt;
+    &lt;/property&gt;
+    &lt;property name="Item28" isnull="true" iskey="true"&gt;
+      &lt;property name="Name"&gt;colGastos Directos&lt;/property&gt;
+      &lt;property name="Caption"&gt;Gastos Directos&lt;/property&gt;
+      &lt;property name="ImageAlignment"&gt;Near&lt;/property&gt;
+      &lt;property name="ImageIndex"&gt;-1&lt;/property&gt;
+      &lt;property name="FieldName"&gt;Gastos Directos&lt;/property&gt;
+      &lt;property name="ColumnEditName" /&gt;
+      &lt;property name="Width"&gt;75&lt;/property&gt;
+      &lt;property name="DisplayFormat" isnull="true" iskey="true"&gt;
+        &lt;property name="FormatString"&gt;c&lt;/property&gt;
+        &lt;property name="FormatType"&gt;Numeric&lt;/property&gt;
+      &lt;/property&gt;
+      &lt;property name="MinWidth"&gt;20&lt;/property&gt;
+      &lt;property name="MaxWidth"&gt;0&lt;/property&gt;
+      &lt;property name="Summary" iskey="true" value="1"&gt;
+        &lt;property name="Item1" isnull="true" iskey="true"&gt;
+          &lt;property name="Tag" isnull="true" /&gt;
+          &lt;property name="FieldName"&gt;Gastos Directos&lt;/property&gt;
+          &lt;property name="SummaryType"&gt;Sum&lt;/property&gt;
+          &lt;property name="DisplayFormat"&gt;{0:c}&lt;/property&gt;
+        &lt;/property&gt;
+      &lt;/property&gt;
+    &lt;/property&gt;
+    &lt;property name="Item29" isnull="true" iskey="true"&gt;
+      &lt;property name="Name"&gt;colGastos Directos por Gallina&lt;/property&gt;
+      &lt;property name="Caption"&gt;Gastos Directos por Gallina&lt;/property&gt;
+      &lt;property name="ImageAlignment"&gt;Near&lt;/property&gt;
+      &lt;property name="ImageIndex"&gt;-1&lt;/property&gt;
+      &lt;property name="FieldName"&gt;Gastos Directos por Gallina&lt;/property&gt;
+      &lt;property name="ColumnEditName" /&gt;
+      &lt;property name="VisibleIndex"&gt;16&lt;/property&gt;
+      &lt;property name="Visible"&gt;true&lt;/property&gt;
+      &lt;property name="Width"&gt;153&lt;/property&gt;
+      &lt;property name="DisplayFormat" isnull="true" iskey="true"&gt;
+        &lt;property name="FormatString"&gt;c&lt;/property&gt;
+        &lt;property name="FormatType"&gt;Numeric&lt;/property&gt;
+      &lt;/property&gt;
+      &lt;property name="MinWidth"&gt;20&lt;/property&gt;
+      &lt;property name="MaxWidth"&gt;0&lt;/property&gt;
+      &lt;property name="Summary" iskey="true" value="1"&gt;
+        &lt;property name="Item1" isnull="true" iskey="true"&gt;
+          &lt;property name="Tag" isnull="true" /&gt;
+          &lt;property name="FieldName"&gt;Gastos Directos por Gallina&lt;/property&gt;
+          &lt;property name="SummaryType"&gt;Sum&lt;/property&gt;
+          &lt;property name="DisplayFormat"&gt;{0:c}&lt;/property&gt;
+        &lt;/property&gt;
+      &lt;/property&gt;
+    &lt;/property&gt;
+    &lt;property name="Item30" isnull="true" iskey="true"&gt;
+      &lt;property name="Name"&gt;colSueldos y Prestaciones&lt;/property&gt;
+      &lt;property name="Caption"&gt;Sueldos y Prestaciones&lt;/property&gt;
+      &lt;property name="ImageAlignment"&gt;Near&lt;/property&gt;
+      &lt;property name="ImageIndex"&gt;-1&lt;/property&gt;
+      &lt;property name="FieldName"&gt;Sueldos y Prestaciones&lt;/property&gt;
+      &lt;property name="ColumnEditName" /&gt;
+      &lt;property name="Width"&gt;75&lt;/property&gt;
+      &lt;property name="DisplayFormat" isnull="true" iskey="true"&gt;
+        &lt;property name="FormatString"&gt;c&lt;/property&gt;
+        &lt;property name="FormatType"&gt;Numeric&lt;/property&gt;
+      &lt;/property&gt;
+      &lt;property name="MinWidth"&gt;20&lt;/property&gt;
+      &lt;property name="MaxWidth"&gt;0&lt;/property&gt;
+      &lt;property name="Summary" iskey="true" value="1"&gt;
+        &lt;property name="Item1" isnull="true" iskey="true"&gt;
+          &lt;property name="Tag" isnull="true" /&gt;
+          &lt;property name="FieldName"&gt;Sueldos y Prestaciones&lt;/property&gt;
+          &lt;property name="SummaryType"&gt;Sum&lt;/property&gt;
+          &lt;property name="DisplayFormat"&gt;{0:c}&lt;/property&gt;
+        &lt;/property&gt;
+      &lt;/property&gt;
+    &lt;/property&gt;
+    &lt;property name="Item31" isnull="true" iskey="true"&gt;
+      &lt;property name="Name"&gt;colSueldos y Pres por Gallinas&lt;/property&gt;
+      &lt;property name="Caption"&gt;Sueldos y Pres por Gallinas&lt;/property&gt;
+      &lt;property name="ImageAlignment"&gt;Near&lt;/property&gt;
+      &lt;property name="ImageIndex"&gt;-1&lt;/property&gt;
+      &lt;property name="FieldName"&gt;Sueldos y Pres por Gallinas&lt;/property&gt;
+      &lt;property name="ColumnEditName" /&gt;
+      &lt;property name="VisibleIndex"&gt;17&lt;/property&gt;
+      &lt;property name="Visible"&gt;true&lt;/property&gt;
+      &lt;property name="Width"&gt;77&lt;/property&gt;
+      &lt;property name="DisplayFormat" isnull="true" iskey="true"&gt;
+        &lt;property name="FormatString"&gt;c&lt;/property&gt;
+        &lt;property name="FormatType"&gt;Numeric&lt;/property&gt;
+      &lt;/property&gt;
+      &lt;property name="MinWidth"&gt;20&lt;/property&gt;
+      &lt;property name="MaxWidth"&gt;0&lt;/property&gt;
+      &lt;property name="Summary" iskey="true" value="1"&gt;
+        &lt;property name="Item1" isnull="true" iskey="true"&gt;
+          &lt;property name="Tag" isnull="true" /&gt;
+          &lt;property name="FieldName"&gt;Sueldos y Pres por Gallinas&lt;/property&gt;
+          &lt;property name="SummaryType"&gt;Sum&lt;/property&gt;
+          &lt;property name="DisplayFormat"&gt;{0:c}&lt;/property&gt;
+        &lt;/property&gt;
+      &lt;/property&gt;
+    &lt;/property&gt;
+  &lt;/property&gt;
+  &lt;property name="ViewCaption" /&gt;
+  &lt;property name="BorderStyle"&gt;Default&lt;/property&gt;
+  &lt;property name="SynchronizeClones"&gt;true&lt;/property&gt;
+  &lt;property name="DetailTabHeaderLocation"&gt;Top&lt;/property&gt;
+  &lt;property name="Name"&gt;GridView1&lt;/property&gt;
+  &lt;property name="DetailHeight"&gt;350&lt;/property&gt;
+  &lt;property name="Tag" isnull="true" /&gt;
+  &lt;property name="GroupSummary" iskey="true" value="88"&gt;
+    &lt;property name="Item1" isnull="true" iskey="true"&gt;
+      &lt;property name="ShowInGroupColumnFooterName" /&gt;
+      &lt;property name="Tag" isnull="true" /&gt;
+      &lt;property name="FieldName"&gt;Perdida por Muerte&lt;/property&gt;
+      &lt;property name="SummaryType"&gt;None&lt;/property&gt;
+      &lt;property name="DisplayFormat"&gt;(Sin Función de Perdida por Muerte: {0})&lt;/property&gt;
+    &lt;/property&gt;
+    &lt;property name="Item2" isnull="true" iskey="true"&gt;
+      &lt;property name="ShowInGroupColumnFooterName" /&gt;
+      &lt;property name="Tag" isnull="true" /&gt;
+      &lt;property name="FieldName"&gt;Perdida por Muerte&lt;/property&gt;
+      &lt;property name="SummaryType"&gt;Sum&lt;/property&gt;
+      &lt;property name="DisplayFormat"&gt;(Suma de Perdida por Muerte: {0})&lt;/property&gt;
+    &lt;/property&gt;
+    &lt;property name="Item3" isnull="true" iskey="true"&gt;
+      &lt;property name="ShowInGroupColumnFooterName" /&gt;
+      &lt;property name="Tag" isnull="true" /&gt;
+      &lt;property name="FieldName"&gt;Perdida por Muerte&lt;/property&gt;
+      &lt;property name="SummaryType"&gt;Sum&lt;/property&gt;
+      &lt;property name="DisplayFormat"&gt;{0:c}&lt;/property&gt;
+    &lt;/property&gt;
+    &lt;property name="Item4" isnull="true" iskey="true"&gt;
+      &lt;property name="ShowInGroupColumnFooterName" /&gt;
+      &lt;property name="Tag" isnull="true" /&gt;
+      &lt;property name="FieldName"&gt;% Mortalidad&lt;/property&gt;
+      &lt;property name="SummaryType"&gt;Average&lt;/property&gt;
+      &lt;property name="DisplayFormat"&gt;(Promedio de % Mortalidad: {0:P})&lt;/property&gt;
+    &lt;/property&gt;
+    &lt;property name="Item5" isnull="true" iskey="true"&gt;
+      &lt;property name="ShowInGroupColumnFooterName" /&gt;
+      &lt;property name="Tag" isnull="true" /&gt;
+      &lt;property name="FieldName"&gt;% Mortalidad&lt;/property&gt;
+      &lt;property name="SummaryType"&gt;Average&lt;/property&gt;
+      &lt;property name="DisplayFormat"&gt;(Promedio de % Mortalidad: {0:P})&lt;/property&gt;
+    &lt;/property&gt;
+    &lt;property name="Item6" isnull="true" iskey="true"&gt;
+      &lt;property name="ShowInGroupColumnFooterName" /&gt;
+      &lt;property name="Tag" isnull="true" /&gt;
+      &lt;property name="FieldName"&gt;Conversion Alimenticia&lt;/property&gt;
+      &lt;property name="SummaryType"&gt;Average&lt;/property&gt;
+      &lt;property name="DisplayFormat"&gt;(Promedio de Conversion Alimenticia: {0:N})&lt;/property&gt;
+    &lt;/property&gt;
+    &lt;property name="Item7" isnull="true" iskey="true"&gt;
+      &lt;property name="ShowInGroupColumnFooterName" /&gt;
+      &lt;property name="Tag" isnull="true" /&gt;
+      &lt;property name="FieldName"&gt;Conversion Alimenticia&lt;/property&gt;
+      &lt;property name="SummaryType"&gt;Average&lt;/property&gt;
+      &lt;property name="DisplayFormat"&gt;(Promedio de Conversion Alimenticia: {0:N})&lt;/property&gt;
+    &lt;/property&gt;
+    &lt;property name="Item8" isnull="true" iskey="true"&gt;
+      &lt;property name="ShowInGroupColumnFooterName" /&gt;
+      &lt;property name="Tag" isnull="true" /&gt;
+      &lt;property name="FieldName"&gt;Complemto Alimenticio&lt;/property&gt;
+      &lt;property name="SummaryType"&gt;Sum&lt;/property&gt;
+      &lt;property name="DisplayFormat"&gt;{0:c}&lt;/property&gt;
+    &lt;/property&gt;
+    &lt;property name="Item9" isnull="true" iskey="true"&gt;
+      &lt;property name="ShowInGroupColumnFooterName" /&gt;
+      &lt;property name="Tag" isnull="true" /&gt;
+      &lt;property name="FieldName"&gt;Med Preventivo por Gallina&lt;/property&gt;
+      &lt;property name="SummaryType"&gt;Average&lt;/property&gt;
+      &lt;property name="DisplayFormat"&gt;(Promedio de Costo Med Preventivo por Gallina: {0:c})&lt;/property&gt;
+    &lt;/property&gt;
+    &lt;property name="Item10" isnull="true" iskey="true"&gt;
+      &lt;property name="ShowInGroupColumnFooterName" /&gt;
+      &lt;property name="Tag" isnull="true" /&gt;
+      &lt;property name="FieldName"&gt;Costo por Gallina&lt;/property&gt;
+      &lt;property name="SummaryType"&gt;Sum&lt;/property&gt;
+      &lt;property name="DisplayFormat"&gt;(Suma de Costo por Gallina: {0:c})&lt;/property&gt;
+    &lt;/property&gt;
+    &lt;property name="Item11" isnull="true" iskey="true"&gt;
+      &lt;property name="ShowInGroupColumnFooterName" /&gt;
+      &lt;property name="Tag" isnull="true" /&gt;
+      &lt;property name="FieldName"&gt;Costo por Gallina&lt;/property&gt;
+      &lt;property name="SummaryType"&gt;Sum&lt;/property&gt;
+      &lt;property name="DisplayFormat"&gt;{0:c}&lt;/property&gt;
+    &lt;/property&gt;
+    &lt;property name="Item12" isnull="true" iskey="true"&gt;
+      &lt;property name="ShowInGroupColumnFooterName"&gt;colCantidad Huevos&lt;/property&gt;
+      &lt;property name="Tag" isnull="true" /&gt;
+      &lt;property name="FieldName"&gt;Cantidad Huevos&lt;/property&gt;
+      &lt;property name="SummaryType"&gt;Sum&lt;/property&gt;
+      &lt;property name="DisplayFormat"&gt;{0:###,##0}&lt;/property&gt;
+    &lt;/property&gt;
+    &lt;property name="Item13" isnull="true" iskey="true"&gt;
+      &lt;property name="ShowInGroupColumnFooterName" /&gt;
+      &lt;property name="Tag" isnull="true" /&gt;
+      &lt;property name="FieldName"&gt;Cajas&lt;/property&gt;
+      &lt;property name="SummaryType"&gt;Sum&lt;/property&gt;
+      &lt;property name="DisplayFormat"&gt;(Suma de Cajas: {0})&lt;/property&gt;
+    &lt;/property&gt;
+    &lt;property name="Item14" isnull="true" iskey="true"&gt;
+      &lt;property name="ShowInGroupColumnFooterName"&gt;colCajas&lt;/property&gt;
+      &lt;property name="Tag" isnull="true" /&gt;
+      &lt;property name="FieldName"&gt;Cajas&lt;/property&gt;
+      &lt;property name="SummaryType"&gt;Sum&lt;/property&gt;
+      &lt;property name="DisplayFormat"&gt;{0}&lt;/property&gt;
+    &lt;/property&gt;
+    &lt;property name="Item15" isnull="true" iskey="true"&gt;
+      &lt;property name="ShowInGroupColumnFooterName" /&gt;
+      &lt;property name="Tag" isnull="true" /&gt;
+      &lt;property name="FieldName"&gt;Costo Total&lt;/property&gt;
+      &lt;property name="SummaryType"&gt;Sum&lt;/property&gt;
+      &lt;property name="DisplayFormat"&gt;(Suma de Costo Total: {0:c})&lt;/property&gt;
+    &lt;/property&gt;
+    &lt;property name="Item16" isnull="true" iskey="true"&gt;
+      &lt;property name="ShowInGroupColumnFooterName"&gt;colCosto Total&lt;/property&gt;
+      &lt;property name="Tag" isnull="true" /&gt;
+      &lt;property name="FieldName"&gt;Costo Total&lt;/property&gt;
+      &lt;property name="SummaryType"&gt;Sum&lt;/property&gt;
+      &lt;property name="DisplayFormat"&gt;{0:c}&lt;/property&gt;
+    &lt;/property&gt;
+    &lt;property name="Item17" isnull="true" iskey="true"&gt;
+      &lt;property name="ShowInGroupColumnFooterName" /&gt;
+      &lt;property name="Tag" isnull="true" /&gt;
+      &lt;property name="FieldName"&gt;Costo por Gallina&lt;/property&gt;
+      &lt;property name="SummaryType"&gt;None&lt;/property&gt;
+      &lt;property name="DisplayFormat"&gt;(Sin Función de Costo por Gallina: {0})&lt;/property&gt;
+    &lt;/property&gt;
+    &lt;property name="Item18" isnull="true" iskey="true"&gt;
+      &lt;property name="ShowInGroupColumnFooterName" /&gt;
+      &lt;property name="Tag" isnull="true" /&gt;
+      &lt;property name="FieldName"&gt;Costo por Gallina&lt;/property&gt;
+      &lt;property name="SummaryType"&gt;Sum&lt;/property&gt;
+      &lt;property name="DisplayFormat"&gt;(Suma de Costo por Gallina: {0:c})&lt;/property&gt;
+    &lt;/property&gt;
+    &lt;property name="Item19" isnull="true" iskey="true"&gt;
+      &lt;property name="ShowInGroupColumnFooterName"&gt;colCosto por Gallina&lt;/property&gt;
+      &lt;property name="Tag" isnull="true" /&gt;
+      &lt;property name="FieldName"&gt;Costo por Gallina&lt;/property&gt;
+      &lt;property name="SummaryType"&gt;Sum&lt;/property&gt;
+      &lt;property name="DisplayFormat"&gt;{0:c}&lt;/property&gt;
+    &lt;/property&gt;
+    &lt;property name="Item20" isnull="true" iskey="true"&gt;
+      &lt;property name="ShowInGroupColumnFooterName" /&gt;
+      &lt;property name="Tag" isnull="true" /&gt;
+      &lt;property name="FieldName"&gt;Muertes&lt;/property&gt;
+      &lt;property name="SummaryType"&gt;None&lt;/property&gt;
+      &lt;property name="DisplayFormat"&gt;(Sin Función de Muertes: {0})&lt;/property&gt;
+    &lt;/property&gt;
+    &lt;property name="Item21" isnull="true" iskey="true"&gt;
+      &lt;property name="ShowInGroupColumnFooterName" /&gt;
+      &lt;property name="Tag" isnull="true" /&gt;
+      &lt;property name="FieldName"&gt;Muertes&lt;/property&gt;
+      &lt;property name="SummaryType"&gt;Sum&lt;/property&gt;
+      &lt;property name="DisplayFormat"&gt;(Suma de Muertes: {0:###,##0})&lt;/property&gt;
+    &lt;/property&gt;
+    &lt;property name="Item22" isnull="true" iskey="true"&gt;
+      &lt;property name="ShowInGroupColumnFooterName"&gt;colMuertes&lt;/property&gt;
+      &lt;property name="Tag" isnull="true" /&gt;
+      &lt;property name="FieldName"&gt;Muertes&lt;/property&gt;
+      &lt;property name="SummaryType"&gt;Sum&lt;/property&gt;
+      &lt;property name="DisplayFormat"&gt;{0:###,##0}&lt;/property&gt;
+    &lt;/property&gt;
+    &lt;property name="Item23" isnull="true" iskey="true"&gt;
+      &lt;property name="ShowInGroupColumnFooterName" /&gt;
+      &lt;property name="Tag" isnull="true" /&gt;
+      &lt;property name="FieldName"&gt;Perdida por Muerte&lt;/property&gt;
+      &lt;property name="SummaryType"&gt;None&lt;/property&gt;
+      &lt;property name="DisplayFormat"&gt;(Sin Función de Perdida por Muerte: {0})&lt;/property&gt;
+    &lt;/property&gt;
+    &lt;property name="Item24" isnull="true" iskey="true"&gt;
+      &lt;property name="ShowInGroupColumnFooterName" /&gt;
+      &lt;property name="Tag" isnull="true" /&gt;
+      &lt;property name="FieldName"&gt;Perdida por Muerte&lt;/property&gt;
+      &lt;property name="SummaryType"&gt;Sum&lt;/property&gt;
+      &lt;property name="DisplayFormat"&gt;(Suma de Perdida por Muerte: {0:c})&lt;/property&gt;
+    &lt;/property&gt;
+    &lt;property name="Item25" isnull="true" iskey="true"&gt;
+      &lt;property name="ShowInGroupColumnFooterName"&gt;colPerdida por Muerte&lt;/property&gt;
+      &lt;property name="Tag" isnull="true" /&gt;
+      &lt;property name="FieldName"&gt;Perdida por Muerte&lt;/property&gt;
+      &lt;property name="SummaryType"&gt;Sum&lt;/property&gt;
+      &lt;property name="DisplayFormat"&gt;{0:c}&lt;/property&gt;
+    &lt;/property&gt;
+    &lt;property name="Item26" isnull="true" iskey="true"&gt;
+      &lt;property name="ShowInGroupColumnFooterName" /&gt;
+      &lt;property name="Tag" isnull="true" /&gt;
+      &lt;property name="FieldName"&gt;% Mortalidad&lt;/property&gt;
+      &lt;property name="SummaryType"&gt;None&lt;/property&gt;
+      &lt;property name="DisplayFormat"&gt;(Sin Función de % Mortalidad: {0})&lt;/property&gt;
+    &lt;/property&gt;
+    &lt;property name="Item27" isnull="true" iskey="true"&gt;
+      &lt;property name="ShowInGroupColumnFooterName" /&gt;
+      &lt;property name="Tag" isnull="true" /&gt;
+      &lt;property name="FieldName"&gt;% Mortalidad&lt;/property&gt;
+      &lt;property name="SummaryType"&gt;Sum&lt;/property&gt;
+      &lt;property name="DisplayFormat"&gt;(Suma de % Mortalidad: {0:P})&lt;/property&gt;
+    &lt;/property&gt;
+    &lt;property name="Item28" isnull="true" iskey="true"&gt;
+      &lt;property name="ShowInGroupColumnFooterName"&gt;col% Mortalidad&lt;/property&gt;
+      &lt;property name="Tag" isnull="true" /&gt;
+      &lt;property name="FieldName"&gt;% Mortalidad&lt;/property&gt;
+      &lt;property name="SummaryType"&gt;Sum&lt;/property&gt;
+      &lt;property name="DisplayFormat"&gt;{0:P}&lt;/property&gt;
+    &lt;/property&gt;
+    &lt;property name="Item29" isnull="true" iskey="true"&gt;
+      &lt;property name="ShowInGroupColumnFooterName" /&gt;
+      &lt;property name="Tag" isnull="true" /&gt;
+      &lt;property name="FieldName"&gt;Costo por %Podtura&lt;/property&gt;
+      &lt;property name="SummaryType"&gt;Average&lt;/property&gt;
+      &lt;property name="DisplayFormat"&gt;(Promedio de Costo por %Podtura: {0:c})&lt;/property&gt;
+    &lt;/property&gt;
+    &lt;property name="Item30" isnull="true" iskey="true"&gt;
+      &lt;property name="ShowInGroupColumnFooterName" /&gt;
+      &lt;property name="Tag" isnull="true" /&gt;
+      &lt;property name="FieldName"&gt;Costo por %Podtura&lt;/property&gt;
+      &lt;property name="SummaryType"&gt;Average&lt;/property&gt;
+      &lt;property name="DisplayFormat"&gt;(Promedio de Costo por %Podtura: {0:c})&lt;/property&gt;
+    &lt;/property&gt;
+    &lt;property name="Item31" isnull="true" iskey="true"&gt;
+      &lt;property name="ShowInGroupColumnFooterName"&gt;colCosto por %Podtura&lt;/property&gt;
+      &lt;property name="Tag" isnull="true" /&gt;
+      &lt;property name="FieldName"&gt;Costo por %Podtura&lt;/property&gt;
+      &lt;property name="SummaryType"&gt;Average&lt;/property&gt;
+      &lt;property name="DisplayFormat"&gt;(Promedio de Costo por %Podtura: {0:c})&lt;/property&gt;
+    &lt;/property&gt;
+    &lt;property name="Item32" isnull="true" iskey="true"&gt;
+      &lt;property name="ShowInGroupColumnFooterName" /&gt;
+      &lt;property name="Tag" isnull="true" /&gt;
+      &lt;property name="FieldName"&gt;Kilos&lt;/property&gt;
+      &lt;property name="SummaryType"&gt;Sum&lt;/property&gt;
+      &lt;property name="DisplayFormat"&gt;(Suma de Kilos: {0:N})&lt;/property&gt;
+    &lt;/property&gt;
+    &lt;property name="Item33" isnull="true" iskey="true"&gt;
+      &lt;property name="ShowInGroupColumnFooterName"&gt;colKilos&lt;/property&gt;
+      &lt;property name="Tag" isnull="true" /&gt;
+      &lt;property name="FieldName"&gt;Kilos&lt;/property&gt;
+      &lt;property name="SummaryType"&gt;Sum&lt;/property&gt;
+      &lt;property name="DisplayFormat"&gt;{0:N}&lt;/property&gt;
+    &lt;/property&gt;
+    &lt;property name="Item34" isnull="true" iskey="true"&gt;
+      &lt;property name="ShowInGroupColumnFooterName" /&gt;
+      &lt;property name="Tag" isnull="true" /&gt;
+      &lt;property name="FieldName"&gt;Kilos por Caja&lt;/property&gt;
+      &lt;property name="SummaryType"&gt;Average&lt;/property&gt;
+      &lt;property name="DisplayFormat"&gt;(Promedio de Kilos por Caja: {0:N})&lt;/property&gt;
+    &lt;/property&gt;
+    &lt;property name="Item35" isnull="true" iskey="true"&gt;
+      &lt;property name="ShowInGroupColumnFooterName"&gt;colKilos por Caja&lt;/property&gt;
+      &lt;property name="Tag" isnull="true" /&gt;
+      &lt;property name="FieldName"&gt;Kilos por Caja&lt;/property&gt;
+      &lt;property name="SummaryType"&gt;Average&lt;/property&gt;
+      &lt;property name="DisplayFormat"&gt;(Promedio de Kilos por Caja: {0:N})&lt;/property&gt;
+    &lt;/property&gt;
+    &lt;property name="Item36" isnull="true" iskey="true"&gt;
+      &lt;property name="ShowInGroupColumnFooterName" /&gt;
+      &lt;property name="Tag" isnull="true" /&gt;
+      &lt;property name="FieldName"&gt;Alimento Consumido&lt;/property&gt;
+      &lt;property name="SummaryType"&gt;None&lt;/property&gt;
+      &lt;property name="DisplayFormat"&gt;(Sin Función de Alimento Consumido: {0})&lt;/property&gt;
+    &lt;/property&gt;
+    &lt;property name="Item37" isnull="true" iskey="true"&gt;
+      &lt;property name="ShowInGroupColumnFooterName" /&gt;
+      &lt;property name="Tag" isnull="true" /&gt;
+      &lt;property name="FieldName"&gt;Alimento Consumido&lt;/property&gt;
+      &lt;property name="SummaryType"&gt;Sum&lt;/property&gt;
+      &lt;property name="DisplayFormat"&gt;(Suma de Alimento Consumido: {0:N})&lt;/property&gt;
+    &lt;/property&gt;
+    &lt;property name="Item38" isnull="true" iskey="true"&gt;
+      &lt;property name="ShowInGroupColumnFooterName"&gt;colAlimento Consumido&lt;/property&gt;
+      &lt;property name="Tag" isnull="true" /&gt;
+      &lt;property name="FieldName"&gt;Alimento Consumido&lt;/property&gt;
+      &lt;property name="SummaryType"&gt;Sum&lt;/property&gt;
+      &lt;property name="DisplayFormat"&gt;{0:N}&lt;/property&gt;
+    &lt;/property&gt;
+    &lt;property name="Item39" isnull="true" iskey="true"&gt;
+      &lt;property name="ShowInGroupColumnFooterName" /&gt;
+      &lt;property name="Tag" isnull="true" /&gt;
+      &lt;property name="FieldName"&gt;Alimento por Gallina&lt;/property&gt;
+      &lt;property name="SummaryType"&gt;None&lt;/property&gt;
+      &lt;property name="DisplayFormat"&gt;(Sin Función de Alimento por Gallina: {0})&lt;/property&gt;
+    &lt;/property&gt;
+    &lt;property name="Item40" isnull="true" iskey="true"&gt;
+      &lt;property name="ShowInGroupColumnFooterName" /&gt;
+      &lt;property name="Tag" isnull="true" /&gt;
+      &lt;property name="FieldName"&gt;Alimento por Gallina&lt;/property&gt;
+      &lt;property name="SummaryType"&gt;Average&lt;/property&gt;
+      &lt;property name="DisplayFormat"&gt;(Promedio de Alimento por Gallina: {0:N})&lt;/property&gt;
+    &lt;/property&gt;
+    &lt;property name="Item41" isnull="true" iskey="true"&gt;
+      &lt;property name="ShowInGroupColumnFooterName" /&gt;
+      &lt;property name="Tag" isnull="true" /&gt;
+      &lt;property name="FieldName"&gt;Alimento por Gallina&lt;/property&gt;
+      &lt;property name="SummaryType"&gt;Sum&lt;/property&gt;
+      &lt;property name="DisplayFormat"&gt;(Suma de Alimento por Gallina: {0:N})&lt;/property&gt;
+    &lt;/property&gt;
+    &lt;property name="Item42" isnull="true" iskey="true"&gt;
+      &lt;property name="ShowInGroupColumnFooterName" /&gt;
+      &lt;property name="Tag" isnull="true" /&gt;
+      &lt;property name="FieldName"&gt;Alimento por Gallina&lt;/property&gt;
+      &lt;property name="SummaryType"&gt;Sum&lt;/property&gt;
+      &lt;property name="DisplayFormat"&gt;(Suma de Alimento por Gallina: {0:N})&lt;/property&gt;
+    &lt;/property&gt;
+    &lt;property name="Item43" isnull="true" iskey="true"&gt;
+      &lt;property name="ShowInGroupColumnFooterName"&gt;colAlimento por Gallina&lt;/property&gt;
+      &lt;property name="Tag" isnull="true" /&gt;
+      &lt;property name="FieldName"&gt;Alimento por Gallina&lt;/property&gt;
+      &lt;property name="SummaryType"&gt;Sum&lt;/property&gt;
+      &lt;property name="DisplayFormat"&gt;{0:N}&lt;/property&gt;
+    &lt;/property&gt;
+    &lt;property name="Item44" isnull="true" iskey="true"&gt;
+      &lt;property name="ShowInGroupColumnFooterName" /&gt;
+      &lt;property name="Tag" isnull="true" /&gt;
+      &lt;property name="FieldName"&gt;Conversion Alimenticia&lt;/property&gt;
+      &lt;property name="SummaryType"&gt;None&lt;/property&gt;
+      &lt;property name="DisplayFormat"&gt;(Sin Función de Conversion Alimenticia: {0})&lt;/property&gt;
+    &lt;/property&gt;
+    &lt;property name="Item45" isnull="true" iskey="true"&gt;
+      &lt;property name="ShowInGroupColumnFooterName" /&gt;
+      &lt;property name="Tag" isnull="true" /&gt;
+      &lt;property name="FieldName"&gt;Conversion Alimenticia&lt;/property&gt;
+      &lt;property name="SummaryType"&gt;Average&lt;/property&gt;
+      &lt;property name="DisplayFormat"&gt;(Promedio de Conversion Alimenticia: {0:N})&lt;/property&gt;
+    &lt;/property&gt;
+    &lt;property name="Item46" isnull="true" iskey="true"&gt;
+      &lt;property name="ShowInGroupColumnFooterName"&gt;colConversion Alimenticia&lt;/property&gt;
+      &lt;property name="Tag" isnull="true" /&gt;
+      &lt;property name="FieldName"&gt;Conversion Alimenticia&lt;/property&gt;
+      &lt;property name="SummaryType"&gt;Average&lt;/property&gt;
+      &lt;property name="DisplayFormat"&gt;(Promedio de Conversion Alimenticia: {0:N})&lt;/property&gt;
+    &lt;/property&gt;
+    &lt;property name="Item47" isnull="true" iskey="true"&gt;
+      &lt;property name="ShowInGroupColumnFooterName" /&gt;
+      &lt;property name="Tag" isnull="true" /&gt;
+      &lt;property name="FieldName"&gt;Costo Conversion Alimenticia&lt;/property&gt;
+      &lt;property name="SummaryType"&gt;Average&lt;/property&gt;
+      &lt;property name="DisplayFormat"&gt;(Promedio de Costo Conversion Alimenticia: {0:c})&lt;/property&gt;
+    &lt;/property&gt;
+    &lt;property name="Item48" isnull="true" iskey="true"&gt;
+      &lt;property name="ShowInGroupColumnFooterName"&gt;colCosto Conversion Alimenticia&lt;/property&gt;
+      &lt;property name="Tag" isnull="true" /&gt;
+      &lt;property name="FieldName"&gt;Costo Conversion Alimenticia&lt;/property&gt;
+      &lt;property name="SummaryType"&gt;Average&lt;/property&gt;
+      &lt;property name="DisplayFormat"&gt;(Promedio de Costo Conversion Alimenticia: {0:c})&lt;/property&gt;
+    &lt;/property&gt;
+    &lt;property name="Item49" isnull="true" iskey="true"&gt;
+      &lt;property name="ShowInGroupColumnFooterName" /&gt;
+      &lt;property name="Tag" isnull="true" /&gt;
+      &lt;property name="FieldName"&gt;Complemto Alimenticio&lt;/property&gt;
+      &lt;property name="SummaryType"&gt;None&lt;/property&gt;
+      &lt;property name="DisplayFormat"&gt;(Sin Función de Complemto Alimenticio: {0})&lt;/property&gt;
+    &lt;/property&gt;
+    &lt;property name="Item50" isnull="true" iskey="true"&gt;
+      &lt;property name="ShowInGroupColumnFooterName" /&gt;
+      &lt;property name="Tag" isnull="true" /&gt;
+      &lt;property name="FieldName"&gt;Complemto Alimenticio&lt;/property&gt;
+      &lt;property name="SummaryType"&gt;Sum&lt;/property&gt;
+      &lt;property name="DisplayFormat"&gt;(Suma de Costo Complemto Alimenticio: {0:c})&lt;/property&gt;
+    &lt;/property&gt;
+    &lt;property name="Item51" isnull="true" iskey="true"&gt;
+      &lt;property name="ShowInGroupColumnFooterName"&gt;colComplemto Alimenticio&lt;/property&gt;
+      &lt;property name="Tag" isnull="true" /&gt;
+      &lt;property name="FieldName"&gt;Complemto Alimenticio&lt;/property&gt;
+      &lt;property name="SummaryType"&gt;Sum&lt;/property&gt;
+      &lt;property name="DisplayFormat"&gt;{0:c}&lt;/property&gt;
+    &lt;/property&gt;
+    &lt;property name="Item52" isnull="true" iskey="true"&gt;
+      &lt;property name="ShowInGroupColumnFooterName" /&gt;
+      &lt;property name="Tag" isnull="true" /&gt;
+      &lt;property name="FieldName"&gt;Complemto Alimenticio por Gallina&lt;/property&gt;
+      &lt;property name="SummaryType"&gt;Average&lt;/property&gt;
+      &lt;property name="DisplayFormat"&gt;(Promedio de CostoComplemto Alimenticio por Gallina: {0:c})&lt;/property&gt;
+    &lt;/property&gt;
+    &lt;property name="Item53" isnull="true" iskey="true"&gt;
+      &lt;property name="ShowInGroupColumnFooterName" /&gt;
+      &lt;property name="Tag" isnull="true" /&gt;
+      &lt;property name="FieldName"&gt;Med Preventivo&lt;/property&gt;
+      &lt;property name="SummaryType"&gt;None&lt;/property&gt;
+      &lt;property name="DisplayFormat"&gt;(Sin Función de Med Preventivo: {0})&lt;/property&gt;
+    &lt;/property&gt;
+    &lt;property name="Item54" isnull="true" iskey="true"&gt;
+      &lt;property name="ShowInGroupColumnFooterName" /&gt;
+      &lt;property name="Tag" isnull="true" /&gt;
+      &lt;property name="FieldName"&gt;Med Preventivo por Gallina&lt;/property&gt;
+      &lt;property name="SummaryType"&gt;Average&lt;/property&gt;
+      &lt;property name="DisplayFormat"&gt;(Promedio de Costo Medicamento Preventivo por Gallina: {0:c})&lt;/property&gt;
+    &lt;/property&gt;
+    &lt;property name="Item55" isnull="true" iskey="true"&gt;
+      &lt;property name="ShowInGroupColumnFooterName" /&gt;
+      &lt;property name="Tag" isnull="true" /&gt;
+      &lt;property name="FieldName"&gt;Med Preventivo&lt;/property&gt;
+      &lt;property name="SummaryType"&gt;Sum&lt;/property&gt;
+      &lt;property name="DisplayFormat"&gt;(Suma de Costo Medicamento Preventivo: {0:c})&lt;/property&gt;
+    &lt;/property&gt;
+    &lt;property name="Item56" isnull="true" iskey="true"&gt;
+      &lt;property name="ShowInGroupColumnFooterName"&gt;colMed Preventivo&lt;/property&gt;
+      &lt;property name="Tag" isnull="true" /&gt;
+      &lt;property name="FieldName"&gt;Med Preventivo&lt;/property&gt;
+      &lt;property name="SummaryType"&gt;Sum&lt;/property&gt;
+      &lt;property name="DisplayFormat"&gt;{0:c}&lt;/property&gt;
+    &lt;/property&gt;
+    &lt;property name="Item57" isnull="true" iskey="true"&gt;
+      &lt;property name="ShowInGroupColumnFooterName" /&gt;
+      &lt;property name="Tag" isnull="true" /&gt;
+      &lt;property name="FieldName"&gt;Med Preventivo por Gallina&lt;/property&gt;
+      &lt;property name="SummaryType"&gt;Average&lt;/property&gt;
+      &lt;property name="DisplayFormat"&gt;(Promedio de Costo Medicamento Preventivo por Gallina: {0:c})&lt;/property&gt;
+    &lt;/property&gt;
+    &lt;property name="Item58" isnull="true" iskey="true"&gt;
+      &lt;property name="ShowInGroupColumnFooterName" /&gt;
+      &lt;property name="Tag" isnull="true" /&gt;
+      &lt;property name="FieldName"&gt;Material Veterianrio&lt;/property&gt;
+      &lt;property name="SummaryType"&gt;Sum&lt;/property&gt;
+      &lt;property name="DisplayFormat"&gt;(Suma de Costo Material Veterianrio: {0:c})&lt;/property&gt;
+    &lt;/property&gt;
+    &lt;property name="Item59" isnull="true" iskey="true"&gt;
+      &lt;property name="ShowInGroupColumnFooterName"&gt;colMaterial Veterianrio&lt;/property&gt;
+      &lt;property name="Tag" isnull="true" /&gt;
+      &lt;property name="FieldName"&gt;Material Veterianrio&lt;/property&gt;
+      &lt;property name="SummaryType"&gt;Sum&lt;/property&gt;
+      &lt;property name="DisplayFormat"&gt;{0:c}&lt;/property&gt;
+    &lt;/property&gt;
+    &lt;property name="Item60" isnull="true" iskey="true"&gt;
+      &lt;property name="ShowInGroupColumnFooterName" /&gt;
+      &lt;property name="Tag" isnull="true" /&gt;
+      &lt;property name="FieldName"&gt;Gastos Directos&lt;/property&gt;
+      &lt;property name="SummaryType"&gt;None&lt;/property&gt;
+      &lt;property name="DisplayFormat"&gt;(Sin Función de Gastos Directos: {0})&lt;/property&gt;
+    &lt;/property&gt;
+    &lt;property name="Item61" isnull="true" iskey="true"&gt;
+      &lt;property name="ShowInGroupColumnFooterName" /&gt;
+      &lt;property name="Tag" isnull="true" /&gt;
+      &lt;property name="FieldName"&gt;Gastos Directos&lt;/property&gt;
+      &lt;property name="SummaryType"&gt;Sum&lt;/property&gt;
+      &lt;property name="DisplayFormat"&gt;(Suma de Gastos Directos: {0:c})&lt;/property&gt;
+    &lt;/property&gt;
+    &lt;property name="Item62" isnull="true" iskey="true"&gt;
+      &lt;property name="ShowInGroupColumnFooterName"&gt;colGastos Directos&lt;/property&gt;
+      &lt;property name="Tag" isnull="true" /&gt;
+      &lt;property name="FieldName"&gt;Gastos Directos&lt;/property&gt;
+      &lt;property name="SummaryType"&gt;Sum&lt;/property&gt;
+      &lt;property name="DisplayFormat"&gt;{0:c}&lt;/property&gt;
+    &lt;/property&gt;
+    &lt;property name="Item63" isnull="true" iskey="true"&gt;
+      &lt;property name="ShowInGroupColumnFooterName" /&gt;
+      &lt;property name="Tag" isnull="true" /&gt;
+      &lt;property name="FieldName"&gt;Sueldos y Prestaciones&lt;/property&gt;
+      &lt;property name="SummaryType"&gt;None&lt;/property&gt;
+      &lt;property name="DisplayFormat"&gt;(Sin Función de Sueldos y Prestaciones: {0})&lt;/property&gt;
+    &lt;/property&gt;
+    &lt;property name="Item64" isnull="true" iskey="true"&gt;
+      &lt;property name="ShowInGroupColumnFooterName" /&gt;
+      &lt;property name="Tag" isnull="true" /&gt;
+      &lt;property name="FieldName"&gt;Sueldos y Prestaciones&lt;/property&gt;
+      &lt;property name="SummaryType"&gt;Sum&lt;/property&gt;
+      &lt;property name="DisplayFormat"&gt;(Suma de Sueldos y Prestaciones: {0:c})&lt;/property&gt;
+    &lt;/property&gt;
+    &lt;property name="Item65" isnull="true" iskey="true"&gt;
+      &lt;property name="ShowInGroupColumnFooterName"&gt;colSueldos y Prestaciones&lt;/property&gt;
+      &lt;property name="Tag" isnull="true" /&gt;
+      &lt;property name="FieldName"&gt;Sueldos y Prestaciones&lt;/property&gt;
+      &lt;property name="SummaryType"&gt;Sum&lt;/property&gt;
+      &lt;property name="DisplayFormat"&gt;{0:c}&lt;/property&gt;
+    &lt;/property&gt;
+    &lt;property name="Item66" isnull="true" iskey="true"&gt;
+      &lt;property name="ShowInGroupColumnFooterName" /&gt;
+      &lt;property name="Tag" isnull="true" /&gt;
+      &lt;property name="FieldName"&gt; Costo Alimento por Gallina&lt;/property&gt;
+      &lt;property name="SummaryType"&gt;Sum&lt;/property&gt;
+      &lt;property name="DisplayFormat"&gt;(Suma de  Costo Alimento por Gallina: {0:c})&lt;/property&gt;
+    &lt;/property&gt;
+    &lt;property name="Item67" isnull="true" iskey="true"&gt;
+      &lt;property name="ShowInGroupColumnFooterName"&gt;col Costo Alimento por Gallina&lt;/property&gt;
+      &lt;property name="Tag" isnull="true" /&gt;
+      &lt;property name="FieldName"&gt; Costo Alimento por Gallina&lt;/property&gt;
+      &lt;property name="SummaryType"&gt;Sum&lt;/property&gt;
+      &lt;property name="DisplayFormat"&gt;{0:c}&lt;/property&gt;
+    &lt;/property&gt;
+    &lt;property name="Item68" isnull="true" iskey="true"&gt;
+      &lt;property name="ShowInGroupColumnFooterName" /&gt;
+      &lt;property name="Tag" isnull="true" /&gt;
+      &lt;property name="FieldName"&gt;Sueldos y Pres por Gallinas&lt;/property&gt;
+      &lt;property name="SummaryType"&gt;Sum&lt;/property&gt;
+      &lt;property name="DisplayFormat"&gt;(Suma de Sueldos y Pres por Gallinas: {0:c})&lt;/property&gt;
+    &lt;/property&gt;
+    &lt;property name="Item69" isnull="true" iskey="true"&gt;
+      &lt;property name="ShowInGroupColumnFooterName"&gt;colSueldos y Pres por Gallinas&lt;/property&gt;
+      &lt;property name="Tag" isnull="true" /&gt;
+      &lt;property name="FieldName"&gt;Sueldos y Pres por Gallinas&lt;/property&gt;
+      &lt;property name="SummaryType"&gt;Sum&lt;/property&gt;
+      &lt;property name="DisplayFormat"&gt;{0:c}&lt;/property&gt;
+    &lt;/property&gt;
+    &lt;property name="Item70" isnull="true" iskey="true"&gt;
+      &lt;property name="ShowInGroupColumnFooterName" /&gt;
+      &lt;property name="Tag" isnull="true" /&gt;
+      &lt;property name="FieldName"&gt;Gastos Directos por Gallina&lt;/property&gt;
+      &lt;property name="SummaryType"&gt;Sum&lt;/property&gt;
+      &lt;property name="DisplayFormat"&gt;(Suma de Gastos Directos por Gallina: {0:c})&lt;/property&gt;
+    &lt;/property&gt;
+    &lt;property name="Item71" isnull="true" iskey="true"&gt;
+      &lt;property name="ShowInGroupColumnFooterName" /&gt;
+      &lt;property name="Tag" isnull="true" /&gt;
+      &lt;property name="FieldName"&gt;Gastos Directos por Gallina&lt;/property&gt;
+      &lt;property name="SummaryType"&gt;Sum&lt;/property&gt;
+      &lt;property name="DisplayFormat"&gt;(Suma de Gastos Directos por Gallina: {0:c})&lt;/property&gt;
+    &lt;/property&gt;
+    &lt;property name="Item72" isnull="true" iskey="true"&gt;
+      &lt;property name="ShowInGroupColumnFooterName"&gt;colGastos Directos por Gallina&lt;/property&gt;
+      &lt;property name="Tag" isnull="true" /&gt;
+      &lt;property name="FieldName"&gt;Gastos Directos por Gallina&lt;/property&gt;
+      &lt;property name="SummaryType"&gt;Sum&lt;/property&gt;
+      &lt;property name="DisplayFormat"&gt;{0:c}&lt;/property&gt;
+    &lt;/property&gt;
+    &lt;property name="Item73" isnull="true" iskey="true"&gt;
+      &lt;property name="ShowInGroupColumnFooterName" /&gt;
+      &lt;property name="Tag" isnull="true" /&gt;
+      &lt;property name="FieldName"&gt;Mat Vet por Gallina&lt;/property&gt;
+      &lt;property name="SummaryType"&gt;Sum&lt;/property&gt;
+      &lt;property name="DisplayFormat"&gt;(Suma de Costo Mat Vet por Gallina: {0:c})&lt;/property&gt;
+    &lt;/property&gt;
+    &lt;property name="Item74" isnull="true" iskey="true"&gt;
+      &lt;property name="ShowInGroupColumnFooterName" /&gt;
+      &lt;property name="Tag" isnull="true" /&gt;
+      &lt;property name="FieldName"&gt;Mat Vet por Gallina&lt;/property&gt;
+      &lt;property name="SummaryType"&gt;Sum&lt;/property&gt;
+      &lt;property name="DisplayFormat"&gt;(Suma de Costo Mat Vet por Gallina: {0:c})&lt;/property&gt;
+    &lt;/property&gt;
+    &lt;property name="Item75" isnull="true" iskey="true"&gt;
+      &lt;property name="ShowInGroupColumnFooterName"&gt;colMat Vet por Gallina&lt;/property&gt;
+      &lt;property name="Tag" isnull="true" /&gt;
+      &lt;property name="FieldName"&gt;Mat Vet por Gallina&lt;/property&gt;
+      &lt;property name="SummaryType"&gt;Sum&lt;/property&gt;
+      &lt;property name="DisplayFormat"&gt;{0:c}&lt;/property&gt;
+    &lt;/property&gt;
+    &lt;property name="Item76" isnull="true" iskey="true"&gt;
+      &lt;property name="ShowInGroupColumnFooterName" /&gt;
+      &lt;property name="Tag" isnull="true" /&gt;
+      &lt;property name="FieldName"&gt;Med Preventivo por Gallina&lt;/property&gt;
+      &lt;property name="SummaryType"&gt;Sum&lt;/property&gt;
+      &lt;property name="DisplayFormat"&gt;(Suma de Costo Medicamento Preventivo por Gallina: {0:c})&lt;/property&gt;
+    &lt;/property&gt;
+    &lt;property name="Item77" isnull="true" iskey="true"&gt;
+      &lt;property name="ShowInGroupColumnFooterName" /&gt;
+      &lt;property name="Tag" isnull="true" /&gt;
+      &lt;property name="FieldName"&gt;Med Preventivo por Gallina&lt;/property&gt;
+      &lt;property name="SummaryType"&gt;Sum&lt;/property&gt;
+      &lt;property name="DisplayFormat"&gt;(Suma de Costo Medicamento Preventivo por Gallina: {0:c})&lt;/property&gt;
+    &lt;/property&gt;
+    &lt;property name="Item78" isnull="true" iskey="true"&gt;
+      &lt;property name="ShowInGroupColumnFooterName"&gt;colMed Preventivo por Gallina&lt;/property&gt;
+      &lt;property name="Tag" isnull="true" /&gt;
+      &lt;property name="FieldName"&gt;Med Preventivo por Gallina&lt;/property&gt;
+      &lt;property name="SummaryType"&gt;Sum&lt;/property&gt;
+      &lt;property name="DisplayFormat"&gt;{0:c}&lt;/property&gt;
+    &lt;/property&gt;
+    &lt;property name="Item79" isnull="true" iskey="true"&gt;
+      &lt;property name="ShowInGroupColumnFooterName" /&gt;
+      &lt;property name="Tag" isnull="true" /&gt;
+      &lt;property name="FieldName"&gt;Complemto Alimenticio por Gallina&lt;/property&gt;
+      &lt;property name="SummaryType"&gt;Sum&lt;/property&gt;
+      &lt;property name="DisplayFormat"&gt;(Suma de Costo Complemto Alimenticio por Gallina: {0:c})&lt;/property&gt;
+    &lt;/property&gt;
+    &lt;property name="Item80" isnull="true" iskey="true"&gt;
+      &lt;property name="ShowInGroupColumnFooterName" /&gt;
+      &lt;property name="Tag" isnull="true" /&gt;
+      &lt;property name="FieldName"&gt;Complemto Alimenticio por Gallina&lt;/property&gt;
+      &lt;property name="SummaryType"&gt;Sum&lt;/property&gt;
+      &lt;property name="DisplayFormat"&gt;(Suma de Costo Complemto Alimenticio por Gallina: {0:c})&lt;/property&gt;
+    &lt;/property&gt;
+    &lt;property name="Item81" isnull="true" iskey="true"&gt;
+      &lt;property name="ShowInGroupColumnFooterName"&gt;colComplemto Alimenticio por Gallina&lt;/property&gt;
+      &lt;property name="Tag" isnull="true" /&gt;
+      &lt;property name="FieldName"&gt;Complemto Alimenticio por Gallina&lt;/property&gt;
+      &lt;property name="SummaryType"&gt;Sum&lt;/property&gt;
+      &lt;property name="DisplayFormat"&gt;{0:c}&lt;/property&gt;
+    &lt;/property&gt;
+    &lt;property name="Item82" isnull="true" iskey="true"&gt;
+      &lt;property name="ShowInGroupColumnFooterName" /&gt;
+      &lt;property name="Tag" isnull="true" /&gt;
+      &lt;property name="FieldName"&gt;Gallinas&lt;/property&gt;
+      &lt;property name="SummaryType"&gt;Min&lt;/property&gt;
+      &lt;property name="DisplayFormat"&gt;(Mínimo de Gallinas: {0:###,##0})&lt;/property&gt;
+    &lt;/property&gt;
+    &lt;property name="Item83" isnull="true" iskey="true"&gt;
+      &lt;property name="ShowInGroupColumnFooterName" /&gt;
+      &lt;property name="Tag" isnull="true" /&gt;
+      &lt;property name="FieldName"&gt;% Postura&lt;/property&gt;
+      &lt;property name="SummaryType"&gt;Average&lt;/property&gt;
+      &lt;property name="DisplayFormat"&gt;(Promedio de % Postura: {0:N})&lt;/property&gt;
+    &lt;/property&gt;
+    &lt;property name="Item84" isnull="true" iskey="true"&gt;
+      &lt;property name="ShowInGroupColumnFooterName" /&gt;
+      &lt;property name="Tag" isnull="true" /&gt;
+      &lt;property name="FieldName"&gt;Costo Alimento Consumido&lt;/property&gt;
+      &lt;property name="SummaryType"&gt;Sum&lt;/property&gt;
+      &lt;property name="DisplayFormat"&gt;(Suma de Costo Alimento Consumido: {0:c})&lt;/property&gt;
+    &lt;/property&gt;
+    &lt;property name="Item85" isnull="true" iskey="true"&gt;
+      &lt;property name="ShowInGroupColumnFooterName" /&gt;
+      &lt;property name="Tag" isnull="true" /&gt;
+      &lt;property name="FieldName"&gt;Costo Alimento Consumido&lt;/property&gt;
+      &lt;property name="SummaryType"&gt;Sum&lt;/property&gt;
+      &lt;property name="DisplayFormat"&gt;(Suma de Costo Alimento Consumido: {0:c})&lt;/property&gt;
+    &lt;/property&gt;
+    &lt;property name="Item86" isnull="true" iskey="true"&gt;
+      &lt;property name="ShowInGroupColumnFooterName"&gt;colCosto Alimento Consumido&lt;/property&gt;
+      &lt;property name="Tag" isnull="true" /&gt;
+      &lt;property name="FieldName"&gt;Costo Alimento Consumido&lt;/property&gt;
+      &lt;property name="SummaryType"&gt;Sum&lt;/property&gt;
+      &lt;property name="DisplayFormat"&gt;{0:c}&lt;/property&gt;
+    &lt;/property&gt;
+    &lt;property name="Item87" isnull="true" iskey="true"&gt;
+      &lt;property name="ShowInGroupColumnFooterName" /&gt;
+      &lt;property name="Tag" isnull="true" /&gt;
+      &lt;property name="FieldName"&gt;Gallinas&lt;/property&gt;
+      &lt;property name="SummaryType"&gt;Min&lt;/property&gt;
+      &lt;property name="DisplayFormat"&gt;(Mínimo de Gallinas: {0:###,##0})&lt;/property&gt;
+    &lt;/property&gt;
+    &lt;property name="Item88" isnull="true" iskey="true"&gt;
+      &lt;property name="ShowInGroupColumnFooterName"&gt;col% Postura&lt;/property&gt;
+      &lt;property name="Tag" isnull="true" /&gt;
+      &lt;property name="FieldName"&gt;% Postura&lt;/property&gt;
+      &lt;property name="SummaryType"&gt;Average&lt;/property&gt;
+      &lt;property name="DisplayFormat"&gt;(Promedio de % Postura: {0:N})&lt;/property&gt;
+    &lt;/property&gt;
+  &lt;/property&gt;
+  &lt;property name="ActiveFilterString" /&gt;
+  &lt;property name="FormatRules" iskey="true" value="0" /&gt;
+  &lt;property name="SortInfoState" iskey="true" value="2"&gt;
+    &lt;property name="Item1" isnull="true" iskey="true"&gt;
+      &lt;property name="Orders"&gt;Ascending&lt;/property&gt;
+      &lt;property name="Columns"&gt;colAlmacen&lt;/property&gt;
+    &lt;/property&gt;
+    &lt;property name="Item2" isnull="true" iskey="true"&gt;
+      &lt;property name="Orders"&gt;Ascending&lt;/property&gt;
+      &lt;property name="Columns"&gt;colSueldos y Pres por Gallinas&lt;/property&gt;
+    &lt;/property&gt;
+    &lt;property name="Content" isnull="true" iskey="true"&gt;
+      &lt;property name="GroupCount"&gt;1&lt;/property&gt;
+    &lt;/property&gt;
+  &lt;/property&gt;
+  &lt;property name="FormatConditions" iskey="true" value="0" /&gt;
+  &lt;property name="GroupSummarySortInfoState" /&gt;
+  &lt;property name="FindFilterText" /&gt;
+  &lt;property name="FindPanelVisible"&gt;false&lt;/property&gt;
+&lt;/XtraSerializer&gt;</Layout>
+      <NombreTabla>Recolleccion</NombreTabla>
+    </Output>
+  </Outputs>
+  <Relaciones />
+  <Parametros>
+    <Parametro>
+      <Tipo>Fecha</Tipo>
+      <Nombre>@FechaInicio</Nombre>
+      <Valor xsi:type="xsd:dateTime">2021-07-04T00:00:00</Valor>
+      <Etiqueta>Del día:</Etiqueta>
+      <Orden>2</Orden>
+      <HasChanges>true</HasChanges>
+      <AskForValue>true</AskForValue>
+    </Parametro>
+    <Parametro>
+      <Tipo>Fecha</Tipo>
+      <Nombre>@FechaFinal</Nombre>
+      <Valor xsi:type="xsd:dateTime">2021-08-01T00:00:00</Valor>
+      <Etiqueta>Al día:</Etiqueta>
+      <Orden>3</Orden>
+      <HasChanges>true</HasChanges>
+      <AskForValue>true</AskForValue>
+    </Parametro>
+    <Parametro>
+      <Tipo>Numero</Tipo>
+      <Nombre>@FechaFin</Nombre>
+      <Valor xsi:type="xsd:int">0</Valor>
+      <Etiqueta>CERO</Etiqueta>
+      <Orden>1</Orden>
+      <HasChanges>false</HasChanges>
+      <AskForValue>true</AskForValue>
+    </Parametro>
+  </Parametros>
+  <ParametrosFormDesign>
+    <FormSize>
+      <Width>0</Width>
+      <Height>0</Height>
+    </FormSize>
+    <FormTitle>Valores de los parámetros de la visión</FormTitle>
+    <DateRangeEnabled>false</DateRangeEnabled>
+    <DateRangeDefaultValue>Hoy</DateRangeDefaultValue>
+  </ParametrosFormDesign>
+  <ConfiguracionCorreo>
+    <Correos />
+  </ConfiguracionCorreo>
+  <FileName>\\servidor\SIMAN\SIMANG8\Selección de Reportes\JOS\KPIShuevo.nvf</FileName>
+  <FileReadOnly>false</FileReadOnly>
+</Vision>
